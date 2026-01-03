@@ -1,0 +1,23 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
+
+# Secrets
+.env
+
+# Database dumps / backups
+*.sql
+*.sql.gz
+backups/
+backup_*.sql
+backup_*.sql.gz
+db.sql
+
+# Archives
+*.zip
+
+# Random local notes
+New Text Document.txt

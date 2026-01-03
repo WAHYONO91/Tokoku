@@ -1,0 +1,208 @@
+<?php
+require_once __DIR__.'/config.php';
+require_login();
+require_role(['admin']);
+
+// ===== Helper: cek apakah kolom ada =====
+function table_has_column(PDO $pdo, string $table, string $column): bool {
+  static $cache = [];
+  $key = $table.'|'.$column;
+  if (isset($cache[$key])) return $cache[$key];
+  $stmt = $pdo->prepare("
+    SELECT COUNT(*) 
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = ?
+      AND COLUMN_NAME = ?
+  ");
+  $stmt->execute([$table, $column]);
+  $cache[$key] = ((int)$stmt->fetchColumn() > 0);
+  return $cache[$key];
+}
+
+$hasCreated = table_has_column($pdo, 'suppliers', 'created_at');
+$hasUpdated = table_has_column($pdo, 'suppliers', 'updated_at');
+
+$msg=''; $err='';
+
+// ===== HAPUS (GET ?delete=KODE) =====
+if (isset($_GET['delete'])) {
+  $delKode = trim($_GET['delete']);
+  if ($delKode !== '') {
+    try {
+      $stmt = $pdo->prepare("DELETE FROM suppliers WHERE kode = ?");
+      $stmt->execute([$delKode]);
+      if ($stmt->rowCount() > 0) {
+        header('Location: '.$_SERVER['PHP_SELF'].'?saved=deleted');
+        exit;
+      } else {
+        $err = 'Data tidak ditemukan.';
+      }
+    } catch (Throwable $th) {
+      $err = 'Gagal menghapus: '.$th->getMessage();
+    }
+  }
+}
+
+// ===== MODE EDIT (GET ?edit=KODE) =====
+$editKode = isset($_GET['edit']) ? trim($_GET['edit']) : '';
+$editRow  = null;
+if ($editKode !== '') {
+  $st = $pdo->prepare("SELECT * FROM suppliers WHERE kode=?");
+  $st->execute([$editKode]);
+  $editRow = $st->fetch();
+  if (!$editRow) $err = "Data untuk kode '".htmlspecialchars($editKode)."' tidak ditemukan.";
+}
+
+// ===== SIMPAN / UPDATE (POST) =====
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  $original_kode = trim($_POST['original_kode'] ?? ''); // untuk edit
+  $kode   = trim($_POST['kode'] ?? '');
+  $nama   = trim($_POST['nama'] ?? '');
+  $alamat = trim($_POST['alamat'] ?? '');
+  $tlp    = trim($_POST['tlp'] ?? '');
+
+  if ($kode === '' || $nama === '') {
+    $err = 'Kode dan Nama wajib diisi.';
+  } else {
+    try {
+      if ($original_kode !== '' && $original_kode !== $kode) {
+        // UPDATE dengan ganti primary key (kode)
+        $sql = "UPDATE suppliers SET kode=?, nama=?, alamat=?, tlp=? ".
+               ($hasUpdated ? ", updated_at=NOW() " : " ").
+               "WHERE kode=?";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([$kode,$nama,$alamat,$tlp,$original_kode]);
+      } else {
+        // UPSERT biasa
+        if ($hasCreated || $hasUpdated) {
+          $sql = "INSERT INTO suppliers (kode, nama, alamat, tlp".
+                 ($hasCreated ? ", created_at" : "").
+                 ($hasUpdated ? ", updated_at" : "").
+                 ") VALUES (?, ?, ?, ?".
+                 ($hasCreated ? ", NOW()" : "").
+                 ($hasUpdated ? ", NOW()" : "").
+                 ")
+                 ON DUPLICATE KEY UPDATE
+                   nama=VALUES(nama),
+                   alamat=VALUES(alamat),
+                   tlp=VALUES(tlp)".
+                 ($hasUpdated ? ", updated_at=NOW()" : "");
+        } else {
+          $sql = "INSERT INTO suppliers (kode, nama, alamat, tlp)
+                  VALUES (?, ?, ?, ?)
+                  ON DUPLICATE KEY UPDATE
+                    nama=VALUES(nama),
+                    alamat=VALUES(alamat),
+                    tlp=VALUES(tlp)";
+        }
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([$kode,$nama,$alamat,$tlp]);
+      }
+
+      // Redirect PRG agar tidak dobel saat refresh
+      header('Location: '.$_SERVER['PHP_SELF'].'?saved=1');
+      exit;
+    } catch (Throwable $th) {
+      $err = 'Gagal menyimpan: '.$th->getMessage();
+    }
+  }
+}
+
+// pesan notifikasi
+if (isset($_GET['saved'])) {
+  $msg = ($_GET['saved']==='deleted') ? '🗑️ Data supplier dihapus.' : '✅ Data supplier tersimpan.';
+}
+
+// ===== Ambil data list =====
+$order = ' ORDER BY ';
+if ($hasUpdated) $order .= 'updated_at DESC, ';
+if ($hasCreated) $order .= 'created_at DESC, ';
+$order .= 'kode ASC';
+$rows = $pdo->query("SELECT * FROM suppliers".$order)->fetchAll();
+
+// helper nilai telepon
+function telp_val(array $r): string {
+  return $r['tlp'] ?? ($r['telp'] ?? ($r['phone'] ?? ''));
+}
+
+require_once __DIR__.'/includes/header.php';
+?>
+<style>
+.form-card{border:1px solid #1f2937;border-radius:12px;padding:1rem;background:#0f172a;margin-bottom:1rem}
+.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.8rem}
+.form-actions{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.5rem}
+.table-actions{white-space:nowrap;display:flex;gap:.4rem}
+</style>
+
+<article>
+  <h3>Master Supplier</h3>
+
+  <?php if ($msg): ?>
+    <mark style="display:block;margin:.6rem 0;background:#16a34a;color:#fff"><?= htmlspecialchars($msg) ?></mark>
+  <?php endif; ?>
+  <?php if ($err): ?>
+    <mark style="display:block;margin:.6rem 0;background:#fee2e2;color:#b91c1c"><?= htmlspecialchars($err) ?></mark>
+  <?php endif; ?>
+
+  <!-- FORM (tambah/edit) -->
+  <form method="post" class="form-card" autocomplete="off">
+    <input type="hidden" name="original_kode" value="<?= htmlspecialchars($editRow['kode'] ?? '') ?>">
+    <div class="grid-2">
+      <label>Kode
+        <input name="kode" required value="<?= htmlspecialchars($editRow['kode'] ?? '') ?>" placeholder="Mis. SUP-001">
+        <small><?= $editRow ? 'Mode edit: mengubah data supplier ini' : 'Kode unik supplier' ?></small>
+      </label>
+      <label>Nama
+        <input name="nama" required value="<?= htmlspecialchars($editRow['nama'] ?? '') ?>">
+      </label>
+      <label>Alamat
+        <input name="alamat" value="<?= htmlspecialchars($editRow['alamat'] ?? '') ?>">
+      </label>
+      <label>Telepon
+        <input name="tlp" value="<?= htmlspecialchars(telp_val($editRow ?? [])) ?>">
+      </label>
+    </div>
+    <div class="form-actions">
+      <button type="submit"><?= $editRow ? 'Update' : 'Simpan' ?></button>
+      <?php if ($editRow): ?>
+        <a class="secondary" href="suppliers.php">Batal Edit</a>
+      <?php endif; ?>
+    </div>
+  </form>
+
+  <!-- TABEL LIST -->
+  <table class="table-small" style="margin-top:.8rem">
+    <thead>
+      <tr>
+        <th>Kode</th>
+        <th>Nama</th>
+        <th>Alamat</th>
+        <th>Telepon</th>
+        <th class="no-print">Aksi</th>
+      </tr>
+    </thead>
+    <tbody>
+      <?php if (!$rows): ?>
+        <tr><td colspan="5">Belum ada data supplier.</td></tr>
+      <?php else: ?>
+        <?php foreach ($rows as $r): ?>
+          <tr>
+            <td><?= htmlspecialchars($r['kode']) ?></td>
+            <td><?= htmlspecialchars($r['nama']) ?></td>
+            <td><?= htmlspecialchars($r['alamat'] ?? '') ?></td>
+            <td><?= htmlspecialchars(telp_val($r)) ?></td>
+            <td class="no-print table-actions">
+              <a href="suppliers.php?edit=<?= urlencode($r['kode']) ?>">Edit</a>
+              <a href="suppliers.php?delete=<?= urlencode($r['kode']) ?>"
+                 onclick="return confirm('Hapus supplier ini? Tindakan tidak dapat dibatalkan.');"
+                 style="color:#dc2626">Hapus</a>
+            </td>
+          </tr>
+        <?php endforeach; ?>
+      <?php endif; ?>
+    </tbody>
+  </table>
+</article>
+
+<?php include __DIR__.'/includes/footer.php'; ?>
