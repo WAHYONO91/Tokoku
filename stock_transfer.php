@@ -150,6 +150,53 @@ $mutasi = $listStmt->fetchAll();
   .right{text-align:right}
   .toolbar{ display:flex; gap:.5rem; flex-wrap:wrap; margin:.6rem 0; }
 
+  /* =========================
+     BATCH: SCROLL + HEADER STICKY
+     ========================= */
+  #batchWrap{
+    max-height: 220px;       /* tinggi kotak daftar (atas-bawah) */
+    overflow: auto;
+    border:1px solid #1f2937;
+    border-radius:.6rem;
+    background:#020617;
+    margin-top:.5rem;
+  }
+  #batchTable thead th{
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background:#0b1220;
+  }
+
+  /* =========================
+     BATCH: BARIS JANGAN TINGGI
+     ========================= */
+  #batchTable{
+    width: 100%;
+    border-collapse: collapse;
+  }
+  #batchTable th,
+  #batchTable td{
+    padding: 4px 6px !important;
+    line-height: 1.1 !important;
+    font-size: 12px !important;
+    vertical-align: middle;
+  }
+  #batchTable thead th{
+    padding: 5px 6px !important;
+  }
+  #batchTable .batchQty{
+    height: 26px !important;
+    padding: 2px 6px !important;
+    font-size: 12px !important;
+  }
+  #batchTable button[data-del]{
+    height: 26px !important;
+    padding: 2px 8px !important;
+    font-size: 12px !important;
+    line-height: 1 !important;
+  }
+
   /* Modal */
   .modal-hidden{ display:none; }
   .modal-overlay{
@@ -288,25 +335,25 @@ $mutasi = $listStmt->fetchAll();
         </button>
       </div>
 
-      <table class="table-small" style="margin-top:.5rem" id="batchTable">
-        <thead>
-          <tr>
-            <th style="width:40px;">No</th>
-            <th style="width:160px;">Kode</th>
-            <th>Nama</th>
-            <th class="right" style="width:120px;">Qty</th>
-            <th style="width:90px;">Aksi</th>
-          </tr>
-        </thead>
-        <tbody id="batchBody">
-          <tr><td colspan="5">Belum ada barang di daftar.</td></tr>
-        </tbody>
-      </table>
+      <div id="batchWrap">
+        <table class="table-small" id="batchTable">
+          <thead>
+            <tr>
+              <th style="width:40px;">No</th>
+              <th style="width:160px;">Kode</th>
+              <th>Nama</th>
+              <th class="right" style="width:110px;">Qty</th>
+              <th style="width:70px;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="batchBody">
+            <tr><td colspan="5">Belum ada barang di daftar.</td></tr>
+          </tbody>
+        </table>
+      </div>
 
-      <!-- HIDDEN INPUTS UNTUK POST -->
       <div id="batchHidden"></div>
     </div>
-
   </form>
 
   <hr style="border:0;border-top:1px solid #1f2937;margin:1rem 0;">
@@ -394,14 +441,8 @@ $mutasi = $listStmt->fetchAll();
 
 <script>
 (function(){
-  // =========================================
-  // KONFIG: SESUAIKAN BASE PATH APP LU
-  // =========================================
   const API_BASE = '/tokoapp/api'; // <-- ganti kalau folder beda
 
-  // =========================
-  // ELEMEN FORM
-  // =========================
   const form       = document.getElementById('mutasiForm');
   const itemKodeEl = document.getElementById('item_kode');
   const qtyEl      = document.getElementById('qty_input');
@@ -409,9 +450,6 @@ $mutasi = $listStmt->fetchAll();
   const toEl       = document.getElementById('to_loc');
   const btnSubmit  = document.getElementById('btnSubmitBatch');
 
-  // =========================
-  // ELEMEN MODAL PENCARIAN
-  // =========================
   const btnOpen    = document.getElementById('btnOpenItemSearch');
   const modalWrap  = document.getElementById('itemSearchModal');
   const modalInput = document.getElementById('itemSearchInput');
@@ -420,13 +458,11 @@ $mutasi = $listStmt->fetchAll();
   const modalBody  = document.getElementById('itemSearchBody');
   const modalCount = document.getElementById('itemSearchCount');
 
-  // =========================
-  // ELEMEN BATCH
-  // =========================
   const btnAddToBatch = document.getElementById('btnAddToBatch');
   const btnClearBatch = document.getElementById('btnClearBatch');
   const batchBody     = document.getElementById('batchBody');
   const batchHidden   = document.getElementById('batchHidden');
+  const batchWrap     = document.getElementById('batchWrap');
 
   if (!form || !itemKodeEl) {
     console.error('mutasiForm / item_kode tidak ditemukan');
@@ -435,9 +471,7 @@ $mutasi = $listStmt->fetchAll();
 
   function formatID(n){ return new Intl.NumberFormat('id-ID').format(n||0); }
 
-  // =========================
-  // INFO STOK (PREVIEW)
-  // =========================
+  // Stock preview
   const stockBox = document.createElement('div');
   stockBox.id = 'stockInfo';
   stockBox.style.marginTop = '.35rem';
@@ -490,16 +524,10 @@ $mutasi = $listStmt->fetchAll();
     stockBox.children[1].textContent = line2;
 
     const invalid = (fromStock !== null) && (qty > fromStock) && qty > 0;
-    if (invalid) {
-      warnEl.style.display = 'block';
-    } else {
-      warnEl.style.display = 'none';
-    }
+    warnEl.style.display = invalid ? 'block' : 'none';
   }
 
-  // =========================
-  // FETCH STOK (AUTO SAAT INPUT)
-  // =========================
+  // Fetch stock
   let timer = null;
   let lastQuery = '';
   let lastReqId = 0;
@@ -550,9 +578,7 @@ $mutasi = $listStmt->fetchAll();
   qtyEl && qtyEl.addEventListener('input', updatePreview);
   qtyEl && qtyEl.addEventListener('change', updatePreview);
 
-  // =========================
-  // MODAL SEARCH
-  // =========================
+  // Modal search
   let modalOpen = false;
 
   function openModal(){
@@ -632,10 +658,8 @@ $mutasi = $listStmt->fetchAll();
     else if (modalOpen && (e.key === 'F2' || e.key === 'Escape')){ e.preventDefault(); closeModal(); }
   });
 
-  // =========================
-  // BATCH LIST
-  // =========================
-  let batchMap = {}; // {kode: {kode,nama,qty}}
+  // Batch
+  let batchMap = {};
 
   function getItemNameByKode(kode){
     const opts = document.querySelectorAll('#itemlist option');
@@ -650,13 +674,18 @@ $mutasi = $listStmt->fetchAll();
     return '-';
   }
 
+  function scrollBatchToBottom(){
+    if (!batchWrap) return;
+    batchWrap.scrollTop = batchWrap.scrollHeight;
+  }
+
   function renderBatch(){
     const keys = Object.keys(batchMap);
     batchBody.innerHTML = '';
     batchHidden.innerHTML = '';
 
     if (keys.length === 0) {
-      batchBody.innerHTML = '<tr><td colspan="5">Belum ada barang di daftar.</td></tr>';
+      batchBody.innerHTML = '<tr><td colspan="5" style="padding:.35rem .5rem;color:#94a3b8;font-size:12px;">Belum ada barang di daftar.</td></tr>';
       return;
     }
 
@@ -670,14 +699,10 @@ $mutasi = $listStmt->fetchAll();
         <td>${kode}</td>
         <td>${it.nama || '-'}</td>
         <td class="right">
-          <input type="number" min="1" value="${it.qty}" data-kode="${kode}" class="batchQty"
-                 style="width:95px;padding:.25rem .35rem;border:1px solid #283548;border-radius:.35rem;background:#020617;color:#e2e8f0;text-align:right;">
+          <input type="number" min="1" value="${it.qty}" data-kode="${kode}" class="batchQty" style="width:70px;">
         </td>
         <td>
-          <button type="button" data-del="${kode}"
-            style="padding:.25rem .45rem;border-radius:.35rem;border:1px solid #374151;background:#111827;color:#e2e8f0;cursor:pointer;">
-            Hapus
-          </button>
+          <button type="button" data-del="${kode}" title="Hapus">✕</button>
         </td>
       `;
       batchBody.appendChild(tr);
@@ -693,9 +718,10 @@ $mutasi = $listStmt->fetchAll();
         const kode = inp.dataset.kode;
         const v = Math.max(1, parseInt(inp.value || '1', 10) || 1);
         inp.value = v;
-        batchMap[kode].qty = v;
-        renderBatch(); // refresh hidden qtys
+        if (batchMap[kode]) batchMap[kode].qty = v;
       });
+      inp.addEventListener('change', ()=>renderBatch());
+      inp.addEventListener('blur', ()=>renderBatch());
     });
 
     batchBody.querySelectorAll('button[data-del]').forEach(btn=>{
@@ -705,6 +731,8 @@ $mutasi = $listStmt->fetchAll();
         renderBatch();
       });
     });
+
+    scrollBatchToBottom();
   }
 
   async function normalizeToKode(raw){
@@ -717,7 +745,7 @@ $mutasi = $listStmt->fetchAll();
         return (data[0].kode || '').trim();
       }
     }catch(e){}
-    return raw; // fallback: backend yang validasi
+    return raw;
   }
 
   btnAddToBatch && btnAddToBatch.addEventListener('click', async ()=>{
@@ -759,10 +787,9 @@ $mutasi = $listStmt->fetchAll();
       return;
     }
     renderBatch();
-    if (btnSubmit) btnSubmit.disabled = true; // cegah double submit
+    if (btnSubmit) btnSubmit.disabled = true;
   });
 
-  // init
   renderBatch();
   updatePreview();
 

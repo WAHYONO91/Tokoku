@@ -9,7 +9,7 @@ function table_has_column(PDO $pdo, string $table, string $column): bool {
   $key = $table.'|'.$column;
   if (isset($cache[$key])) return $cache[$key];
   $stmt = $pdo->prepare("
-    SELECT COUNT(*) 
+    SELECT COUNT(*)
     FROM information_schema.COLUMNS
     WHERE TABLE_SCHEMA = DATABASE()
       AND TABLE_NAME = ?
@@ -50,7 +50,7 @@ $editRow  = null;
 if ($editKode !== '') {
   $st = $pdo->prepare("SELECT * FROM suppliers WHERE kode=?");
   $st->execute([$editKode]);
-  $editRow = $st->fetch();
+  $editRow = $st->fetch(PDO::FETCH_ASSOC);
   if (!$editRow) $err = "Data untuk kode '".htmlspecialchars($editKode)."' tidak ditemukan.";
 }
 
@@ -66,43 +66,68 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $err = 'Kode dan Nama wajib diisi.';
   } else {
     try {
-      if ($original_kode !== '' && $original_kode !== $kode) {
-        // UPDATE dengan ganti primary key (kode)
-        $sql = "UPDATE suppliers SET kode=?, nama=?, alamat=?, tlp=? ".
-               ($hasUpdated ? ", updated_at=NOW() " : " ").
-               "WHERE kode=?";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([$kode,$nama,$alamat,$tlp,$original_kode]);
-      } else {
-        // UPSERT biasa
-        if ($hasCreated || $hasUpdated) {
-          $sql = "INSERT INTO suppliers (kode, nama, alamat, tlp".
-                 ($hasCreated ? ", created_at" : "").
-                 ($hasUpdated ? ", updated_at" : "").
-                 ") VALUES (?, ?, ?, ?".
-                 ($hasCreated ? ", NOW()" : "").
-                 ($hasUpdated ? ", NOW()" : "").
-                 ")
-                 ON DUPLICATE KEY UPDATE
-                   nama=VALUES(nama),
-                   alamat=VALUES(alamat),
-                   tlp=VALUES(tlp)".
-                 ($hasUpdated ? ", updated_at=NOW()" : "");
-        } else {
-          $sql = "INSERT INTO suppliers (kode, nama, alamat, tlp)
-                  VALUES (?, ?, ?, ?)
-                  ON DUPLICATE KEY UPDATE
-                    nama=VALUES(nama),
-                    alamat=VALUES(alamat),
-                    tlp=VALUES(tlp)";
+      // ============================
+      // VALIDASI: KODE TIDAK BOLEH DUPLIKAT
+      // ============================
+      if ($original_kode === '') {
+        // MODE TAMBAH: kalau kode sudah ada -> TOLAK
+        $ck = $pdo->prepare("SELECT 1 FROM suppliers WHERE kode=? LIMIT 1");
+        $ck->execute([$kode]);
+        if ($ck->fetchColumn()) {
+          $err = 'Kode supplier sudah ada. Gunakan kode lain.';
         }
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([$kode,$nama,$alamat,$tlp]);
+      } else {
+        // MODE EDIT: kalau ganti kode, pastikan kode baru belum dipakai supplier lain
+        if ($kode !== $original_kode) {
+          $ck = $pdo->prepare("SELECT 1 FROM suppliers WHERE kode=? LIMIT 1");
+          $ck->execute([$kode]);
+          if ($ck->fetchColumn()) {
+            $err = 'Kode supplier sudah dipakai supplier lain. Gunakan kode lain.';
+          }
+        }
       }
 
-      // Redirect PRG agar tidak dobel saat refresh
-      header('Location: '.$_SERVER['PHP_SELF'].'?saved=1');
-      exit;
+      if ($err === '') {
+        if ($original_kode !== '') {
+          // UPDATE
+          if ($kode !== $original_kode) {
+            // ganti primary key
+            $sql = "UPDATE suppliers SET kode=?, nama=?, alamat=?, tlp=? ".
+                   ($hasUpdated ? ", updated_at=NOW() " : " ").
+                   "WHERE kode=?";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$kode,$nama,$alamat,$tlp,$original_kode]);
+          } else {
+            // update biasa (kode tetap)
+            $sql = "UPDATE suppliers SET nama=?, alamat=?, tlp=? ".
+                   ($hasUpdated ? ", updated_at=NOW() " : " ").
+                   "WHERE kode=?";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$nama,$alamat,$tlp,$kode]);
+          }
+        } else {
+          // INSERT (TANPA UPSERT)
+          if ($hasCreated || $hasUpdated) {
+            $sql = "INSERT INTO suppliers (kode, nama, alamat, tlp".
+                   ($hasCreated ? ", created_at" : "").
+                   ($hasUpdated ? ", updated_at" : "").
+                   ") VALUES (?, ?, ?, ?".
+                   ($hasCreated ? ", NOW()" : "").
+                   ($hasUpdated ? ", NOW()" : "").
+                   ")";
+          } else {
+            $sql = "INSERT INTO suppliers (kode, nama, alamat, tlp) VALUES (?, ?, ?, ?)";
+          }
+
+          $stmt = $pdo->prepare($sql);
+          $stmt->execute([$kode,$nama,$alamat,$tlp]);
+        }
+
+        // Redirect PRG agar tidak dobel saat refresh
+        header('Location: '.$_SERVER['PHP_SELF'].'?saved=1');
+        exit;
+      }
+
     } catch (Throwable $th) {
       $err = 'Gagal menyimpan: '.$th->getMessage();
     }
@@ -119,13 +144,16 @@ $order = ' ORDER BY ';
 if ($hasUpdated) $order .= 'updated_at DESC, ';
 if ($hasCreated) $order .= 'created_at DESC, ';
 $order .= 'kode ASC';
-$rows = $pdo->query("SELECT * FROM suppliers".$order)->fetchAll();
+$rows = $pdo->query("SELECT * FROM suppliers".$order)->fetchAll(PDO::FETCH_ASSOC);
 
 // helper nilai telepon
 function telp_val(array $r): string {
   return $r['tlp'] ?? ($r['telp'] ?? ($r['phone'] ?? ''));
 }
 
+// =============================
+// BARU INCLUDE HEADER DI SINI ✅
+// =============================
 require_once __DIR__.'/includes/header.php';
 ?>
 <style>
@@ -151,7 +179,7 @@ require_once __DIR__.'/includes/header.php';
     <div class="grid-2">
       <label>Kode
         <input name="kode" required value="<?= htmlspecialchars($editRow['kode'] ?? '') ?>" placeholder="Mis. SUP-001">
-        <small><?= $editRow ? 'Mode edit: mengubah data supplier ini' : 'Kode unik supplier' ?></small>
+        <small><?= $editRow ? 'Mode edit: mengubah data supplier ini' : 'Kode unik supplier (tidak boleh sama)' ?></small>
       </label>
       <label>Nama
         <input name="nama" required value="<?= htmlspecialchars($editRow['nama'] ?? '') ?>">

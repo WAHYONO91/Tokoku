@@ -73,6 +73,22 @@ try {
   padding:.5rem 1rem .7rem;border-top:1px solid #111827;font-size:.75rem;
   color:#9ca3af;display:flex;justify-content:space-between;gap:.5rem;
 }
+
+/* =========================================================
+   PENYESUAIAN: TABEL PEMBELIAN SCROLL + FOKUS INPUT TERBARU
+   ========================================================= */
+.table-scroll{
+  max-height:55vh;            /* tinggi tabel. ubah kalau mau */
+  overflow-y:auto;
+  border:1px solid #1f2937;
+  border-radius:.6rem;
+}
+.table-scroll thead th{
+  position:sticky;
+  top:0;
+  z-index:2;
+  background:#0f172a;
+}
 </style>
 
 <article>
@@ -137,46 +153,51 @@ try {
       </datalist>
     </article>
 
-    <table class="table-small" id="purchaseTable" style="margin-top:1rem;">
-      <thead>
-        <tr>
-          <th>Kode</th>
-          <th>Nama</th>
-          <th>Satuan</th>
-          <th class="right">Qty</th>
-          <th class="right">Harga Beli</th>
-          <th class="right">HJ1</th>
-          <th class="right">HJ2</th>
-          <th class="right">HJ3</th>
-          <th class="right">HJ4</th>
-          <th class="right">Total</th>
-          <th class="no-print">Aksi</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-      <tfoot>
-        <tr>
-          <th colspan="9" class="right">Subtotal</th>
-          <th class="right" id="subtotal">0</th>
-          <th></th>
-        </tr>
-        <tr>
-          <th colspan="9" class="right">Diskon (Rp)</th>
-          <th class="right" id="tdiscount">0</th>
-          <th></th>
-        </tr>
-        <tr>
-          <th colspan="9" class="right">PPN (Rp)</th>
-          <th class="right" id="ttax">0</th>
-          <th></th>
-        </tr>
-        <tr>
-          <th colspan="9" class="right">Total</th>
-          <th class="right" id="gtotal">0</th>
-          <th></th>
-        </tr>
-      </tfoot>
-    </table>
+    <!-- =======================================================
+         PENYESUAIAN: bungkus tabel dengan div scroll wrapper
+         ======================================================= -->
+    <div class="table-scroll" style="margin-top:1rem;">
+      <table class="table-small" id="purchaseTable" style="margin:0;">
+        <thead>
+          <tr>
+            <th>Kode</th>
+            <th>Nama</th>
+            <th>Satuan</th>
+            <th class="right">Qty</th>
+            <th class="right">Harga Beli</th>
+            <th class="right">HJ1</th>
+            <th class="right">HJ2</th>
+            <th class="right">HJ3</th>
+            <th class="right">HJ4</th>
+            <th class="right">Total</th>
+            <th class="no-print">Aksi</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+        <tfoot>
+          <tr>
+            <th colspan="9" class="right">Subtotal</th>
+            <th class="right" id="subtotal">0</th>
+            <th></th>
+          </tr>
+          <tr>
+            <th colspan="9" class="right">Diskon (Rp)</th>
+            <th class="right" id="tdiscount">0</th>
+            <th></th>
+          </tr>
+          <tr>
+            <th colspan="9" class="right">PPN (Rp)</th>
+            <th class="right" id="ttax">0</th>
+            <th></th>
+          </tr>
+          <tr>
+            <th colspan="9" class="right">Total</th>
+            <th class="right" id="gtotal">0</th>
+            <th></th>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
 
     <div class="grid" style="margin-top:1rem;">
       <label>Diskon (%)
@@ -250,6 +271,7 @@ const discountPctEl = document.getElementById('discount_pct');
 const taxPctEl = document.getElementById('tax_pct');
 const discountHidden = document.getElementById('discount');
 const taxHidden = document.getElementById('tax');
+const tableScrollWrap = document.querySelector('.table-scroll');
 
 function formatID(n){ return new Intl.NumberFormat('id-ID').format(n); }
 
@@ -289,7 +311,6 @@ function setStockInfo(gudang, toko){
   const t = Number.isFinite(toko) ? toko : 0;
   stockInfo.textContent = `Stok Gudang: ${formatID(g)} | Stok Toko: ${formatID(t)}`;
 }
-
 
 function setPendingQty(v){
   pendingQty = v;
@@ -400,6 +421,7 @@ barcodeEl.addEventListener('keypress', async (e)=>{
     }
 
     barcodeEl.value = '';
+    focusBarcode(); // <<< PENYESUAIAN: fokus balik ke input
   }
 });
 
@@ -447,6 +469,19 @@ function renderRows(){
 
   recalcFooter(subtotal);
   bindRowEvents();
+
+  // =======================================================
+  // PENYESUAIAN: auto scroll ke item terbaru + fokus input
+  // =======================================================
+  if (tableScrollWrap) {
+    tableScrollWrap.scrollTop = tableScrollWrap.scrollHeight;
+  }
+  if (barcodeEl) {
+    setTimeout(() => {
+      barcodeEl.focus();
+      barcodeEl.select && barcodeEl.select();
+    }, 0);
+  }
 }
 
 function bindRowEvents(){

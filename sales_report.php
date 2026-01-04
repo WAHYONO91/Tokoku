@@ -22,8 +22,18 @@ $status = strtolower(trim($_GET['status'] ?? 'ok')); // ok|retur|batal|all
 $valid_status = ['ok','retur','batal','all'];
 if (!in_array($status, $valid_status, true)) $status = 'ok';
 
-// Query utama
-$sql = "SELECT s.* FROM sales s WHERE DATE(s.created_at) BETWEEN :from AND :to";
+// =====================================
+// Query utama: JOIN member agar tampil nama
+// =====================================
+// Asumsi tabel: members(kode,nama). Ganti kalau beda.
+$sql = "
+  SELECT
+    s.*,
+    m.nama AS member_nama
+  FROM sales s
+  LEFT JOIN members m ON m.kode = s.member_kode
+  WHERE DATE(s.created_at) BETWEEN :from AND :to
+";
 $params = [
   ':from' => $from,
   ':to'   => $to,
@@ -38,15 +48,16 @@ if ($status === 'ok') {
   $sql .= " AND (s.status='BATAL' OR s.status='CANCEL')";
 } // 'all' = tanpa filter tambahan
 
-// Filter pencarian invoice / member
+// Filter pencarian invoice / member (kode / nama)
 if ($q !== '') {
-  // PENTING: gunakan 2 placeholder berbeda, jangan :q saja
-  $sql .= " AND (s.invoice_no LIKE :q1 OR s.member_kode LIKE :q2)";
+  $sql .= " AND (s.invoice_no LIKE :q1 OR s.member_kode LIKE :q2 OR m.nama LIKE :q3)";
   $params[':q1'] = '%'.$q.'%';
   $params[':q2'] = '%'.$q.'%';
+  $params[':q3'] = '%'.$q.'%';
 }
 
 $sql .= " ORDER BY s.created_at DESC";
+
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -60,7 +71,14 @@ $count_rows = count($rows);
 
 // Ringkas badge per status
 function count_by_status($pdo, $from, $to, $where) {
-  $q = "SELECT COUNT(*) FROM sales s WHERE DATE(s.created_at) BETWEEN :from AND :to ".$where;
+  // NOTE: ikut join members biar WHERE m.nama (kalau dipakai) tidak error di masa depan
+  $q = "
+    SELECT COUNT(*)
+    FROM sales s
+    LEFT JOIN members m ON m.kode = s.member_kode
+    WHERE DATE(s.created_at) BETWEEN :from AND :to
+    ".$where."
+  ";
   $st = $pdo->prepare($q);
   $st->execute([':from'=>$from, ':to'=>$to]);
   return (int)$st->fetchColumn();
@@ -178,7 +196,7 @@ function pill_link($label, $key, $active, $from, $to, $q, $count, $clsExtra=''){
       </select>
     </label>
     <label>Cari Invoice / Member
-      <input type="text" name="q" placeholder="mis. S202511070930" value="<?= htmlspecialchars($q) ?>">
+      <input type="text" name="q" placeholder="mis. S202511070930 / nama member" value="<?= htmlspecialchars($q) ?>">
     </label>
     <button type="submit">Tampilkan</button>
     <a class="secondary" href="?from=<?= htmlspecialchars($today) ?>&to=<?= htmlspecialchars($today) ?>&status=ok">Reset Hari Ini</a>
@@ -206,7 +224,7 @@ function pill_link($label, $key, $active, $from, $to, $q, $count, $clsExtra=''){
         <tr>
           <th>Tanggal</th>
           <th>Invoice</th>
-          <th>Member</th>
+          <th>Nama Member</th>
           <th>Shift</th>
           <th class="right">Total</th>
           <th>Status</th>
@@ -225,13 +243,17 @@ function pill_link($label, $key, $active, $from, $to, $q, $count, $clsExtra=''){
           if ($label === 'BATAL') $st_class = 'batal';
           if ($label === 'RETURN' || $label === 'RETUR') $st_class = 'retur';
 
-          // Izinkan edit khusus ADMIN dan hanya baris OK
           $can_edit = $is_admin && $is_ok_row;
+
+          // tampilkan nama kalau ada, fallback ke kode, fallback '-'
+          $member_name = trim((string)($r['member_nama'] ?? ''));
+          if ($member_name === '') $member_name = trim((string)($r['member_kode'] ?? ''));
+          if ($member_name === '') $member_name = '-';
         ?>
         <tr>
           <td><?= date('d-m-Y H:i', strtotime($r['created_at'])) ?></td>
           <td><?= htmlspecialchars($r['invoice_no']) ?></td>
-          <td><?= htmlspecialchars($r['member_kode'] ?? '-') ?></td>
+          <td><?= htmlspecialchars($member_name) ?></td>
           <td><?= htmlspecialchars($r['shift'] ?? '-') ?></td>
           <td class="right"><?= rupiah((int)($r['total'] ?? 0)) ?></td>
           <td><span class="status <?= $st_class ?>"><?= htmlspecialchars($label==='RETURN'?'RETUR':$label) ?></span></td>
@@ -239,7 +261,6 @@ function pill_link($label, $key, $active, $from, $to, $q, $count, $clsExtra=''){
             <a class="btn-inline" href="/tokoapp/sale_print.php?id=<?= (int)$r['id'] ?>" target="_blank" rel="noopener">Cetak</a>
 
             <?php if($can_edit): ?>
-              <!-- Tombol Edit khusus admin untuk status OK -->
               <a class="btn-inline btn-warning" href="/tokoapp/sale_edit.php?id=<?= (int)$r['id'] ?>">Edit</a>
             <?php endif; ?>
 

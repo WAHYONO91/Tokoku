@@ -161,7 +161,7 @@ try {
 <head>
   <meta charset="utf-8">
   <title>Pembelian Disimpan</title>
-  <link rel="stylesheet" href="/tokoapp/assets/vendor/pico.min.css">
+  <link rel="stylesheet" href="/tokoapp/assets/vendor/pico/pico.min.css">
 </head>
 <body>
 <main class="container">
