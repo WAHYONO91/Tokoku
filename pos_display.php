@@ -230,6 +230,7 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
       border-radius:.35rem;
       padding:.2rem .3rem;
       font-size:.82rem;
+      min-width: 118px;
     }
 
     .panel-bottom{ padding: .75rem .75rem; }
@@ -1106,8 +1107,16 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
       const total = r.qty*harga;
       subtotal += total; totalItems += r.qty;
 
+      // ====== PERUBAHAN UTAMA:
+      // Dropdown level harga sekarang tampilkan nominal harga 1..4
+      const h1 = r.prices[0] || 0;
+      const h2 = r.prices[1] || 0;
+      const h3 = r.prices[2] || 0;
+      const h4 = r.prices[3] || 0;
+
       const tr=document.createElement('tr');
       if(idx===activeIdx) tr.classList.add('active-row');
+
       tr.innerHTML=`<td class="col-kode">${r.kode}</td>
                     <td>${r.nama}</td>
                     <td class="right col-qty"><input type="number" min="1" value="${r.qty}" class="qtyInput"></td>
@@ -1115,10 +1124,10 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
                       <div class="priceRow">
                         <span class="priceText">${formatID(harga)}</span>
                         <select class="lvlSel" title="Pilih Level Harga">
-                          <option value="1"${r.level===1?' selected':''}>H1</option>
-                          <option value="2"${r.level===2?' selected':''}>H2</option>
-                          <option value="3"${r.level===3?' selected':''}>H3</option>
-                          <option value="4"${r.level===4?' selected':''}>H4</option>
+                          <option value="1"${r.level===1?' selected':''}>H1 • ${formatID(h1)}</option>
+                          <option value="2"${r.level===2?' selected':''}>H2 • ${formatID(h2)}</option>
+                          <option value="3"${r.level===3?' selected':''}>H3 • ${formatID(h3)}</option>
+                          <option value="4"${r.level===4?' selected':''}>H4 • ${formatID(h4)}</option>
                         </select>
                       </div>
                     </td>

@@ -1,6 +1,6 @@
 <?php
 // =============================
-// sales_edit_pos.php (FULL FILE)
+// sales_edit_pos.php (FINAL)
 // =============================
 require_once __DIR__.'/config.php';
 require_once __DIR__.'/functions.php';
@@ -14,6 +14,13 @@ require_role(['admin']); // edit transaksi: admin only (ubah kalau perlu)
 $setting = $pdo->query("
   SELECT 
     store_name,
+
+    -- earning points (threshold)
+    points_per_rupiah,
+    points_per_rupiah_umum,
+    points_per_rupiah_grosir,
+
+    -- redeem (rupiah per 1 point)
     rupiah_per_point_umum,
     rupiah_per_point_grosir,
     redeem_rp_per_point_umum,
@@ -24,7 +31,15 @@ $setting = $pdo->query("
 
 $store = $setting['store_name'] ?? 'TOKO';
 
-// nilai potongan per 1 poin
+// threshold earning: berapa rupiah untuk dapat 1 poin
+$global_ppr = (int)($setting['points_per_rupiah'] ?? 0);
+$ppr_umum   = (int)($setting['points_per_rupiah_umum'] ?? 0);
+$ppr_grosir = (int)($setting['points_per_rupiah_grosir'] ?? 0);
+
+$threshold_umum   = $ppr_umum   > 0 ? $ppr_umum   : $global_ppr;
+$threshold_grosir = $ppr_grosir > 0 ? $ppr_grosir : $global_ppr;
+
+// nilai potongan per 1 poin (redeem)
 $redeem_umum = (int)($setting['redeem_rp_per_point_umum'] ?? 0);
 if ($redeem_umum <= 0) $redeem_umum = (int)($setting['rupiah_per_point_umum'] ?? 100);
 if ($redeem_umum <= 0) $redeem_umum = 100;
@@ -47,13 +62,32 @@ function json_out($arr, $http=200){
   exit;
 }
 
+function norm_jenis($j){
+  $j = strtolower(trim((string)$j));
+  return ($j === 'grosir') ? 'grosir' : 'umum';
+}
+
+function calc_earned_points($base_for_points, $jenis, $threshold_umum, $threshold_grosir){
+  $jenis = norm_jenis($jenis);
+  $threshold = ($jenis === 'grosir')
+    ? ($threshold_grosir > 0 ? $threshold_grosir : $threshold_umum)
+    : ($threshold_umum > 0 ? $threshold_umum : $threshold_grosir);
+
+  if ($threshold <= 0) return 0;
+  if ($base_for_points <= 0) return 0;
+  return (int) floor($base_for_points / $threshold);
+}
+
+function calc_redeem_rp_per_point($jenis, $redeem_umum, $redeem_grosir){
+  $jenis = norm_jenis($jenis);
+  return ($jenis === 'grosir') ? (int)$redeem_grosir : (int)$redeem_umum;
+}
+
 // =======================
 // Ambil ID transaksi
 // =======================
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-if ($id <= 0) {
-  die("ID tidak valid.");
-}
+if ($id <= 0) die("ID tidak valid.");
 
 // =======================
 // Load header sale
@@ -63,8 +97,11 @@ $st->execute([$id]);
 $sale = $st->fetch(PDO::FETCH_ASSOC);
 if (!$sale) die("Transaksi tidak ditemukan.");
 
-if (!empty($sale['status']) && strtoupper($sale['status']) !== 'OK') {
-  die("Hanya transaksi status OK yang dapat diedit.");
+// izinkan edit semua transaksi termasuk RETURN/VOID kalau kamu mau
+// sebelumnya kamu blok status non-OK.
+// sekarang: tetap izinkan, tapi minimal transaksi harus ada.
+if (empty($sale['status'])) {
+  // kalau status null, tetap lanjut.
 }
 
 // =======================
@@ -84,7 +121,7 @@ $items_old = $sti->fetchAll(PDO::FETCH_ASSOC);
 $oldById = [];
 foreach($items_old as $it){ $oldById[(int)$it['id']] = $it; }
 
-// member list untuk datalist
+// member list untuk datalist (optional)
 $members = [];
 try{
   $members = $pdo->query("SELECT kode, nama FROM members ORDER BY created_at DESC LIMIT 300")->fetchAll(PDO::FETCH_ASSOC);
@@ -93,7 +130,7 @@ try{
 // =======================
 // URL cetak (ubah kalau beda)
 // =======================
-$PRINT_URL_BASE = '/tokoapp/sale_print.php?id=';// <-- ganti kalau file cetakmu beda
+$PRINT_URL_BASE = '/tokoapp/sale_print.php?id=';
 
 // =======================
 // API: SAVE (AJAX)
@@ -102,7 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['payload'])) {
   $payload = json_decode($_POST['payload'], true);
   if (!$payload) json_out(['success'=>false,'error'=>'Payload tidak valid.'], 400);
 
-  // ambil input
+  // input header
   $member_kode   = trim($payload['member_kode'] ?? '');
   $shift         = (string)($payload['shift'] ?? '');
   $discount      = (int)($payload['discount'] ?? 0);
@@ -121,25 +158,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['payload'])) {
     json_out(['success'=>false,'error'=>'Item kosong.'], 400);
   }
 
-  // load member (buat cek poin & jenis)
+  // load member baru (pakai members.points)
   $member = null;
   $member_type = null;
-  $member_poin_now = 0;
+  $member_points_now = 0;
 
   if ($member_kode !== '') {
-    $sm = $pdo->prepare("SELECT kode, nama, jenis, poin FROM members WHERE kode=? LIMIT 1");
+    $sm = $pdo->prepare("SELECT kode, nama, jenis, points FROM members WHERE kode=? LIMIT 1");
     $sm->execute([$member_kode]);
     $member = $sm->fetch(PDO::FETCH_ASSOC);
-    if (!$member) {
-      json_out(['success'=>false,'error'=>'Member tidak ditemukan.'], 400);
-    }
-    $member_type = $member['jenis'] ?? 'umum';
-    $member_poin_now = (int)($member['poin'] ?? 0);
+    if (!$member) json_out(['success'=>false,'error'=>'Member tidak ditemukan.'], 400);
+    $member_type = norm_jenis($member['jenis'] ?? 'umum');
+    $member_points_now = (int)($member['points'] ?? 0);
   }
 
-  $perPoint = 0;
-  if ($member_type === 'grosir') $perPoint = (int)$redeem_grosir;
-  else if ($member_type === 'umum') $perPoint = (int)$redeem_umum;
+  $rpPerPoint = 0;
+  if ($member_type === 'grosir') $rpPerPoint = (int)$redeem_grosir;
+  else if ($member_type === 'umum') $rpPerPoint = (int)$redeem_umum;
 
   // Query harga master
   $qh = $pdo->prepare("SELECT kode, nama, harga_jual1, harga_jual2, harga_jual3, harga_jual4 FROM items WHERE kode=? LIMIT 1");
@@ -161,6 +196,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['payload'])) {
     $kode  = trim($r['item_kode'] ?? '');
     $qty   = (int)($r['qty'] ?? 0);
     $lvl   = (int)($r['level'] ?? 1);
+
     if ($qty < 0) $qty = 0;
     if ($lvl < 1) $lvl = 1;
     if ($lvl > 4) $lvl = 4;
@@ -169,11 +205,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['payload'])) {
 
     $qh->execute([$kode]);
     $it = $qh->fetch(PDO::FETCH_ASSOC);
-    if (!$it) {
-      json_out(['success'=>false,'error'=>"Barang tidak ditemukan: $kode"], 400);
-    }
+    if (!$it) json_out(['success'=>false,'error'=>"Barang tidak ditemukan: $kode"], 400);
 
-    $nama = $it['nama'] ?? ($r['nama'] ?? '');
+    $nama  = $it['nama'] ?? ($r['nama'] ?? '');
     $harga = (int)($it['harga_jual'.$lvl] ?? 0);
 
     // fallback harga lama kalau master 0
@@ -182,13 +216,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['payload'])) {
     }
 
     if ($si_id > 0) {
-      $updates[] = [
-        'id'=>$si_id,'item_kode'=>$kode,'nama'=>$nama,'qty'=>$qty,'level'=>$lvl,'harga'=>$harga
-      ];
+      $updates[] = ['id'=>$si_id,'item_kode'=>$kode,'nama'=>$nama,'qty'=>$qty,'level'=>$lvl,'harga'=>$harga];
     } else {
-      $inserts[] = [
-        'item_kode'=>$kode,'nama'=>$nama,'qty'=>$qty,'level'=>$lvl,'harga'=>$harga
-      ];
+      $inserts[] = ['item_kode'=>$kode,'nama'=>$nama,'qty'=>$qty,'level'=>$lvl,'harga'=>$harga];
     }
 
     $subtotal += ($qty * $harga);
@@ -210,16 +240,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['payload'])) {
     ? (int)floor($tax_base * ($tax/100))
     : $tax;
 
-  // point discount (capped maxAllowable)
+  // point discount (capped)
   $maxAllowable = max(0, $subtotal - $disc_nom + $tax_nom);
   $point_discount = 0;
-  if ($member && $perPoint > 0 && $poin_ditukar > 0) {
-    $point_discount = $poin_ditukar * $perPoint;
+
+  if ($member && $rpPerPoint > 0 && $poin_ditukar > 0) {
+    $point_discount = $poin_ditukar * $rpPerPoint;
     if ($point_discount > $maxAllowable) {
-      // kalau potongan kebesaran, kecilkan poin_ditukar juga biar konsisten
       $point_discount = $maxAllowable;
-      $poin_ditukar = (int)floor($point_discount / $perPoint);
-      $point_discount = $poin_ditukar * $perPoint; // rapihin
+      $poin_ditukar = (int)floor($point_discount / $rpPerPoint);
+      $point_discount = $poin_ditukar * $rpPerPoint;
     }
   } else {
     $poin_ditukar = 0;
@@ -230,42 +260,118 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['payload'])) {
   $kembalian = max(0, $tunai - $total);
 
   // =========================
-  // VALIDASI poin member
-  // rollback dulu poin lama -> baru cek cukup untuk poin_ditukar baru
+  // POINTS: rollback transaksi lama -> apply transaksi baru
+  // Target kolom: members.points (BUKAN poin)
   // =========================
-  $old_member_kode = (string)($sale['member_kode'] ?? '');
-  $old_poin_ditukar = (int)($sale['poin_ditukar'] ?? 0);
+  $old_member_kode   = (string)($sale['member_kode'] ?? '');
+  $old_poin_ditukar  = (int)($sale['poin_ditukar'] ?? 0);
+  $old_point_discount= (int)($sale['point_discount'] ?? 0);
 
-  // poin available setelah rollback (jika member sama)
-  // kalau member diganti, rollback ke member lama & potong ke member baru
+  // hitung earned points transaksi lama (pakai total lama)
+  $old_member_jenis = 'umum';
+  if ($old_member_kode !== '') {
+    $qom = $pdo->prepare("SELECT jenis FROM members WHERE kode=? LIMIT 1");
+    $qom->execute([$old_member_kode]);
+    $om = $qom->fetch(PDO::FETCH_ASSOC);
+    if ($om) $old_member_jenis = norm_jenis($om['jenis'] ?? 'umum');
+  }
+
+  $old_subtotal = (int)($sale['subtotal'] ?? 0);
+  $old_discount = (int)($sale['discount'] ?? 0);
+  $old_tax      = (int)($sale['tax'] ?? 0);
+
+  $old_base_for_points = max(0, $old_subtotal - $old_discount + $old_tax);
+  $old_earned_points = ($old_member_kode !== '')
+    ? calc_earned_points($old_base_for_points, $old_member_jenis, $threshold_umum, $threshold_grosir)
+    : 0;
+
+  // earned points transaksi baru
+  $new_base_for_points = max(0, $subtotal - $disc_nom + $tax_nom);
+  $new_earned_points = ($member_kode !== '' && $member_type)
+    ? calc_earned_points($new_base_for_points, $member_type, $threshold_umum, $threshold_grosir)
+    : 0;
+
   try {
     $pdo->beginTransaction();
 
-    // 1) rollback poin member lama (jika ada)
+    // ---- 1) Rollback ke member lama (kalau ada):
+    // - balikin poin yang dulu ditukar (old_poin_ditukar)
+    // - kurangi poin yang dulu didapat (old_earned_points)
     if ($old_member_kode !== '') {
-      $pdo->prepare("UPDATE members SET poin = poin + ? WHERE kode=? LIMIT 1")
-          ->execute([$old_poin_ditukar, $old_member_kode]);
+      // points = points + old_poin_ditukar - old_earned_points
+      $pdo->prepare("
+        UPDATE members
+        SET points = GREATEST(0, points + :redeem_back - :earned_back)
+        WHERE kode = :kode
+        LIMIT 1
+      ")->execute([
+        ':redeem_back' => $old_poin_ditukar,
+        ':earned_back' => $old_earned_points,
+        ':kode'        => $old_member_kode
+      ]);
     }
 
-    // 2) cek member baru cukup
+    // ---- 2) Apply ke member baru (kalau ada):
     if ($member_kode !== '') {
-      $cur = $pdo->prepare("SELECT poin, jenis FROM members WHERE kode=? LIMIT 1");
+      // cek member baru + points tersedia
+      $cur = $pdo->prepare("SELECT points, jenis FROM members WHERE kode=? LIMIT 1");
       $cur->execute([$member_kode]);
       $mcur = $cur->fetch(PDO::FETCH_ASSOC);
       if (!$mcur) throw new Exception("Member baru tidak ditemukan.");
-      $poin_available = (int)$mcur['poin'];
 
-      if ($poin_ditukar > $poin_available) {
-        throw new Exception("Poin member tidak cukup. Tersedia: ".$poin_available.", diminta: ".$poin_ditukar);
+      $p_available = (int)($mcur['points'] ?? 0);
+      $jenis_new = norm_jenis($mcur['jenis'] ?? 'umum');
+
+      // pastikan rpPerPoint sesuai jenis real di DB (biar tidak mismatch)
+      $rpPerPoint_real = calc_redeem_rp_per_point($jenis_new, $redeem_umum, $redeem_grosir);
+
+      // kalau jenis berubah, recalc point_discount & total supaya konsisten
+      if ($member_type !== $jenis_new) {
+        $member_type = $jenis_new;
+        $rpPerPoint  = $rpPerPoint_real;
+
+        // recalc point_discount (capped)
+        $maxAllowable = max(0, $subtotal - $disc_nom + $tax_nom);
+        if ($rpPerPoint > 0 && $poin_ditukar > 0) {
+          $point_discount = $poin_ditukar * $rpPerPoint;
+          if ($point_discount > $maxAllowable) {
+            $point_discount = $maxAllowable;
+            $poin_ditukar = (int)floor($point_discount / $rpPerPoint);
+            $point_discount = $poin_ditukar * $rpPerPoint;
+          }
+        } else {
+          $poin_ditukar = 0;
+          $point_discount = 0;
+        }
+
+        $total = max(0, $subtotal - $disc_nom + $tax_nom - $point_discount);
+        $kembalian = max(0, $tunai - $total);
+
+        // recalc earned points
+        $new_base_for_points = max(0, $subtotal - $disc_nom + $tax_nom);
+        $new_earned_points = calc_earned_points($new_base_for_points, $member_type, $threshold_umum, $threshold_grosir);
       }
 
-      // 3) potong poin member baru
-      $pdo->prepare("UPDATE members SET poin = poin - ? WHERE kode=? LIMIT 1")
-          ->execute([$poin_ditukar, $member_kode]);
+      if ($poin_ditukar > $p_available) {
+        throw new Exception("Poin member tidak cukup. Tersedia: ".$p_available.", diminta: ".$poin_ditukar);
+      }
+
+      // apply: points = points - poin_ditukar + new_earned_points
+      $pdo->prepare("
+        UPDATE members
+        SET points = GREATEST(0, points - :redeem - 0) + :earned
+        WHERE kode = :kode
+        LIMIT 1
+      ")->execute([
+        ':redeem' => $poin_ditukar,
+        ':earned' => $new_earned_points,
+        ':kode'   => $member_kode
+      ]);
     } else {
-      // member kosong -> poin_ditukar harus 0
+      // member kosong -> poin ditukar nol, point_discount nol
       $poin_ditukar = 0;
       $point_discount = 0;
+      $new_earned_points = 0;
       $total = max(0, $subtotal - $disc_nom + $tax_nom);
       $kembalian = max(0, $tunai - $total);
     }
@@ -273,7 +379,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['payload'])) {
     // =========================
     // STOK + SALE_ITEMS
     // =========================
-    // UPDATE existing rows
     $upd = $pdo->prepare("
       UPDATE sale_items
       SET item_kode=:kode, nama=:nama, qty=:qty, level=:lvl, harga=:harga
@@ -291,13 +396,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['payload'])) {
       $new_qty  = (int)$u['qty'];
 
       if ($new_kode !== $old_kode) {
-        // kembalikan stok lama
         if ($old_qty > 0) adjust_stock($pdo, $old_kode, 'toko', +$old_qty);
-        // ambil stok baru
         if ($new_qty > 0) adjust_stock($pdo, $new_kode, 'toko', -$new_qty);
       } else {
-        // sama -> selisih
-        $delta = $new_qty - $old_qty; // + bertambah jual -> kurangi stok
+        $delta = $new_qty - $old_qty;
         if ($delta !== 0) adjust_stock($pdo, $new_kode, 'toko', -$delta);
       }
 
@@ -390,6 +492,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['payload'])) {
       'total'=>$total,
       'tunai'=>$tunai,
       'kembalian'=>$kembalian,
+      'earned_points'=>$new_earned_points,
       'print_url'=>$PRINT_URL_BASE.$id
     ]);
   } catch (Exception $e) {
@@ -658,7 +761,7 @@ foreach($items_old as $it){
     <div class="brand"><?= htmlspecialchars($store) ?></div>
     <div class="sub">Edit Transaksi — #<?= htmlspecialchars($sale['invoice_no'] ?? $sale['id']) ?></div>
   </div>
-  <div class="muted">ID: <?= (int)$sale['id'] ?> • Status: <?= htmlspecialchars($sale['status']) ?></div>
+  <div class="muted">ID: <?= (int)$sale['id'] ?> • Status: <?= htmlspecialchars($sale['status'] ?? '-') ?></div>
 </div>
 
 <div class="wrap">
@@ -737,9 +840,12 @@ foreach($items_old as $it){
     </div>
 
     <div class="card panel-bottom">
-      <div class="kps">
-        <label>Member (Kode)
-          <input list="memberlist" id="member_kode" placeholder="Ketik kode member">
+        <div class="kps">
+          <label>Member (Kode)
+            <div class="memberRow">
+              <input list="memberlist" id="member_kode" placeholder="Ketik kode member" autocomplete="off">
+              <button type="button" class="btn btn-mini" id="btnMemberSearch" title="Cari Member (Buka Master Member)">Cari</button>
+            </div>
           <datalist id="memberlist">
             <?php foreach($members as $m): ?>
               <option value="<?= htmlspecialchars($m['kode']) ?>"><?= htmlspecialchars($m['nama']) ?></option>
@@ -808,7 +914,7 @@ foreach($items_old as $it){
 
       <div class="row no-print" style="margin-top:1rem;gap:.8rem;flex-wrap:wrap">
         <button class="btn" id="btnSave" type="button">Simpan & Cetak</button>
-        <a class="btn" href="/tokoapp/sales_report.php?from=<?= htmlspecialchars(substr($sale['created_at'],0,10)) ?>&to=<?= htmlspecialchars(substr($sale['created_at'],0,10)) ?>&status=ok">Kembali</a>
+        <a class="btn" href="/tokoapp/sales_report.php?from=<?= htmlspecialchars(substr((string)$sale['created_at'],0,10)) ?>&to=<?= htmlspecialchars(substr((string)$sale['created_at'],0,10)) ?>&status=ok">Kembali</a>
         <span class="muted" id="saveStatus" style="flex:1;min-width:260px"></span>
       </div>
     </div>
@@ -841,6 +947,7 @@ foreach($items_old as $it){
   const memberKodeEl = document.getElementById('member_kode');
   const memberNamaEl = document.getElementById('member_nama');
   const memberPoinEl = document.getElementById('member_poin');
+  const btnMemberSearch = document.getElementById('btnMemberSearch');
 
   const poinDitukarEl = document.getElementById('poin_ditukar');
   const poinPotonganView = document.getElementById('poin_potongan_view');
@@ -886,6 +993,13 @@ foreach($items_old as $it){
     }
   });
 
+  // tutup overlay saat print window bilang selesai
+  window.addEventListener('message', (e)=>{
+    if (e && e.data && e.data.type === 'PRINT_DONE'){
+      hideKembalianOverlay();
+    }
+  });
+
   // ==========================
   // Picker barang (F2)
   // ==========================
@@ -901,20 +1015,19 @@ foreach($items_old as $it){
     const v = (value || '').toString().trim();
     if(!v) return;
 
-    // kalau belum ada row aktif, buat row baru
     if (activeIdx < 0) {
       cart.push({ id:null, kode:'', nama:'', qty:1, level:1, prices:[0,0,0,0] });
       activeIdx = cart.length - 1;
     }
-    // isi kode ke row aktif, lalu fetch item
     replaceRowItem(activeIdx, v);
   };
 
   // ==========================
-  // Load member by kode
+  // MEMBER picker popup (samakan style pos_display)
   // ==========================
-  async function loadMemberByKode(kodeRaw) {
+async function loadMemberByKode(kodeRaw) {
     const kode = (kodeRaw || '').trim();
+
     if (!kode) {
       memberNamaEl.value = '';
       memberPoinEl.value = '0';
@@ -923,9 +1036,11 @@ foreach($items_old as $it){
       renderCart();
       return;
     }
-    try{
-      const res = await fetch('/tokoapp/api/get_member.php?kode=' + encodeURIComponent(kode));
+
+    try {
+      const res = await fetch('/tokoapp/api/get_member.php?kode=' + encodeURIComponent(kode), { cache: 'no-store' });
       const m = await res.json();
+
       if (m && !m.error && m.kode) {
         memberNamaEl.value = m.nama || '';
         memberPoinEl.value = m.poin || 0;
@@ -936,28 +1051,119 @@ foreach($items_old as $it){
         memberType = null;
         memberKodeEl.value = '';
         alert('Member tidak ditemukan');
+        setTimeout(() => { memberKodeEl.focus(); memberKodeEl.select && memberKodeEl.select(); }, 0);
       }
-    }catch(e){
+    } catch (e) {
       memberNamaEl.value = '';
       memberPoinEl.value = '0';
       memberType = null;
       memberKodeEl.value = '';
       alert('Gagal mengambil data member');
+      setTimeout(() => { memberKodeEl.focus(); memberKodeEl.select && memberKodeEl.select(); }, 0);
     }
+
     hitungPointDiscount();
     renderCart();
   }
 
-  memberKodeEl.addEventListener('change', ()=>loadMemberByKode(memberKodeEl.value));
-  memberKodeEl.addEventListener('keydown', (e)=>{
-    if(e.key==='Enter'){ e.preventDefault(); loadMemberByKode(memberKodeEl.value); }
+  function triggerMemberSearch() { loadMemberByKode(memberKodeEl.value); }
+
+  memberKodeEl.addEventListener('change', triggerMemberSearch);
+  memberKodeEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      triggerMemberSearch();
+    }
+  });
+
+  window.setMemberFromPicker = function(kode){
+    const k = (kode || '').trim();
+    if(!k) return;
+    memberKodeEl.value = k;
+    loadMemberByKode(k);
+    setTimeout(() => { focusBarcode(); }, 0);
+  };
+
+  function openMemberPicker(){
+    const url = '/tokoapp/members.php?pick=1';
+    const w = 1100, h = 720;
+    const left = Math.max(0, (screen.width  - w) / 2);
+    const top  = Math.max(0, (screen.height - h) / 2);
+
+    window.open(
+      url,
+      'memberPicker',
+      `width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes`
+    );
+  }
+
+  function openMemberPopupWindow(){
+    const w = window.open('members.php?popup=1', 'memberSearch', 'width=1100,height=700');
+    if (w) w.focus();
+  }
+  if (btnMemberSearch) btnMemberSearch.addEventListener('click', openMemberPopupWindow);
+
+  // ==========================
+  // MEMBER: load by kode
+  // ==========================
+  async function loadMemberByKode(kodeRaw) {
+    const kode = (kodeRaw || '').trim();
+
+    if (!kode) {
+      memberNamaEl.value = '';
+      memberPoinEl.value = '0';
+      memberType = null;
+      hitungPointDiscount();
+      renderCart();
+      return;
+    }
+
+    try {
+      const res = await fetch('/tokoapp/api/get_member.php?kode=' + encodeURIComponent(kode), { cache: 'no-store' });
+      const m = await res.json();
+
+      if (m && !m.error && m.kode) {
+        memberNamaEl.value = m.nama || '';
+        // API kamu mungkin balikin "points" atau "poin". kita toleransi dua-duanya.
+        const p = (m.points ?? m.poin ?? 0);
+        memberPoinEl.value = p || 0;
+        memberType = (m.jenis || 'umum');
+      } else {
+        memberNamaEl.value = '';
+        memberPoinEl.value = '0';
+        memberType = null;
+        memberKodeEl.value = '';
+        alert('Member tidak ditemukan');
+        setTimeout(() => { memberKodeEl.focus(); memberKodeEl.select && memberKodeEl.select(); }, 0);
+      }
+    } catch (e) {
+      memberNamaEl.value = '';
+      memberPoinEl.value = '0';
+      memberType = null;
+      memberKodeEl.value = '';
+      alert('Gagal mengambil data member');
+      setTimeout(() => { memberKodeEl.focus(); memberKodeEl.select && memberKodeEl.select(); }, 0);
+    }
+
+    hitungPointDiscount();
+    renderCart();
+  }
+
+  function triggerMemberSearch() { loadMemberByKode(memberKodeEl.value); }
+
+  memberKodeEl.addEventListener('change', triggerMemberSearch);
+  memberKodeEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      triggerMemberSearch();
+    }
   });
 
   // ==========================
   // Fetch item by kode untuk row
   // ==========================
   async function fetchItem(kode){
-    const res = await fetch('/tokoapp/api/get_item.php?q=' + encodeURIComponent(kode));
+    const res = await fetch('/tokoapp/api/get_item.php?q=' + encodeURIComponent(kode), { cache: 'no-store' });
     return await res.json();
   }
 
@@ -968,12 +1174,14 @@ foreach($items_old as $it){
       const it = await fetchItem(code);
       if(!it || !it.kode){ alert('Barang tidak ditemukan: ' + code); return; }
 
-      const prices=[1,2,3,4].map(i=> parseInt(it['harga_jual'+i])||0);
+      // toleransi nama key dari API: harga_jual1..4
+      const prices=[1,2,3,4].map(i=> parseInt(it['harga_jual'+i] ?? it['harga'+i] ?? 0) || 0);
+
       cart[idx].kode = it.kode;
       cart[idx].nama = it.nama;
       cart[idx].prices = prices;
 
-      // kalau harga H1 ada, default level ke 1
+      // default level ke 1
       cart[idx].level = 1;
 
       renderCart();
@@ -1000,6 +1208,12 @@ foreach($items_old as $it){
     let disc = poinUse * perPoint;
     if(typeof maxAllowable === 'number'){
       disc = Math.min(disc, maxAllowable);
+      // rapikan poin kalau cap terjadi
+      if (perPoint > 0) {
+        const p = Math.floor(disc / perPoint);
+        poinDitukarEl.value = p;
+        disc = p * perPoint;
+      }
     }
     poinPotonganView.textContent = formatID(disc);
     return disc;
@@ -1130,7 +1344,6 @@ foreach($items_old as $it){
       return;
     }
 
-    // hitung total dari UI
     const subtotal = unformat(subtotalEl.textContent);
     const disc = unformat(tdiscountEl.textContent);
     const tax  = unformat(ttaxEl.textContent);
@@ -1183,11 +1396,8 @@ foreach($items_old as $it){
       }
 
       saveStatus.textContent = 'Tersimpan. Membuka nota...';
-
-      // tampilkan overlay kembalian dan BIARKAN tampil (tutup manual)
       showKembalianOverlay(data.kembalian || 0);
 
-      // buka print tab baru
       if (data.print_url){
         window.open(data.print_url, '_blank', 'noopener');
       } else {
@@ -1233,7 +1443,6 @@ foreach($items_old as $it){
   // Bootstrap state from INIT
   // ==========================
   function bootstrap(){
-    // items
     INIT.items.forEach(it=>{
       cart.push({
         id: it.id,
@@ -1246,7 +1455,6 @@ foreach($items_old as $it){
     });
     activeIdx = cart.length ? 0 : -1;
 
-    // sale fields
     memberKodeEl.value = INIT.sale.member_kode || '';
     shiftEl.value = INIT.sale.shift || '';
     discountEl.value = INIT.sale.discount || 0;
@@ -1256,7 +1464,6 @@ foreach($items_old as $it){
     poinDitukarEl.value = INIT.sale.poin_ditukar || 0;
     tunaiEl.value = formatID(INIT.sale.tunai || 0);
 
-    // load member detail (nama/poin/jenis)
     if (memberKodeEl.value) {
       loadMemberByKode(memberKodeEl.value).then(()=>renderCart());
     } else {

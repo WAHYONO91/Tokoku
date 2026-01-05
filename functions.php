@@ -90,3 +90,41 @@ function auto_update_prices_from_purchase(PDO $pdo, string $item_kode, int $harg
   ");
   $stmt->execute([$harga_beli, $item_kode]);
 }
+/* ============================================================
+ * MEMBER HELPERS (for popup picker / search)
+ * ============================================================
+ */
+
+/**
+ * HTML escape helper
+ */
+if (!function_exists('h')) {
+  function h($s): string {
+    return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8');
+  }
+}
+
+/**
+ * Ambil list member untuk popup cari/pick.
+ * - $q: keyword (kode/nama)
+ * - $limit: default 500
+ */
+function get_members(PDO $pdo, string $q = '', int $limit = 500): array {
+  $q = trim($q);
+  $limit = max(1, min(2000, (int)$limit)); // safety
+
+  $params = [];
+  $sql = "SELECT kode, nama, jenis, poin, created_at FROM members";
+
+  if ($q !== '') {
+    $sql .= " WHERE kode LIKE ? OR nama LIKE ?";
+    $params[] = "%{$q}%";
+    $params[] = "%{$q}%";
+  }
+
+  $sql .= " ORDER BY created_at DESC LIMIT {$limit}";
+
+  $st = $pdo->prepare($sql);
+  $st->execute($params);
+  return $st->fetchAll(PDO::FETCH_ASSOC);
+}

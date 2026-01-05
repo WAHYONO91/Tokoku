@@ -143,7 +143,8 @@ if (!in_array($storeNameAlign, ['left','center','right'], true)) $storeNameAlign
 $member_kode         = $sale['member_kode'] ?? '';
 $member_nama         = '';
 $member_jenis        = 'umum';
-$member_points_after = null;
+$member_points_after = 0;   // default biar selalu ada angka
+$member_found = false;
 
 if ($member_kode) {
     $mstmt = $pdo->prepare("SELECT * FROM members WHERE kode = ?");
@@ -154,6 +155,7 @@ if ($member_kode) {
         $mj = isset($mrow['jenis']) ? strtolower(trim($mrow['jenis'])) : 'umum';
         $member_jenis = ($mj === 'grosir' || $mj === 'umum') ? $mj : 'umum';
         $member_points_after = isset($mrow['points']) ? (int)$mrow['points'] : 0;
+
     }
 }
 
@@ -320,17 +322,19 @@ $cssLineHeight   = number_format($paperLineHeight, 2, '.', '');
   <hr>
 
   <table>
-    <?php foreach ($items as $it): ?>
-      <tr>
-        <td colspan="3"><?= htmlspecialchars($it['nama']) ?></td>
-      </tr>
-      <tr>
-        <td><?= (int)$it['qty'] ?> x <?= number_format((int)$it['harga'], 0, ',', '.') ?></td>
-        <td></td>
-        <td class="right"><?= number_format((int)$it['total'], 0, ',', '.') ?></td>
-      </tr>
-    <?php endforeach; ?>
-  </table>
+  <?php foreach ($items as $it): ?>
+    <?php $line_total = ((int)$it['qty']) * ((int)$it['harga']); ?>
+    <tr>
+      <td colspan="3"><?= htmlspecialchars($it['nama']) ?></td>
+    </tr>
+    <tr>
+      <td><?= (int)$it['qty'] ?> x <?= number_format((int)$it['harga'], 0, ',', '.') ?></td>
+      <td></td>
+      <td class="right"><?= number_format($line_total, 0, ',', '.') ?></td>
+    </tr>
+  <?php endforeach; ?>
+</table>
+
 
   <hr>
 

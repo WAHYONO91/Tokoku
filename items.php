@@ -328,7 +328,7 @@ table td .btn-print-barcode {
   <?php endif; ?>
 
   <!-- Filter Cari & Limit -->
-  <form method="get" class="no-print" style="margin-bottom:.7rem;display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+  <form method="get" id="filterForm" class="no-print" style="margin-bottom:.7rem;display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
     <?php if ($isPicker): ?>
       <input type="hidden" name="pick" value="1">
     <?php endif; ?>
@@ -567,6 +567,32 @@ function printBarcode(kode, barcode) {
 </script>
 <?php endif; ?>
 
+<!-- ===== ENTER = SUBMIT FILTER (JALAN DI INPUT/SELECT) ===== -->
+<script>
+(function(){
+  const form = document.getElementById('filterForm');
+  if(!form) return;
+
+  form.addEventListener('keydown', (e)=>{
+    if(e.key !== 'Enter') return;
+
+    const tag = (e.target?.tagName || '').toLowerCase();
+    if(tag === 'textarea') return;
+
+    // Di mode picker, Enter juga dipakai untuk pilih row (shortcut).
+    // Jadi, kalau fokus lagi di input filter, submit filter.
+    // Kalau fokus bukan di input filter, biarkan shortcut picker yang handle.
+    const isInFilterInput = (e.target && e.target.name === 'q');
+    const isInLimitSelect = (e.target && e.target.name === 'limit');
+
+    if(isInFilterInput || isInLimitSelect){
+      e.preventDefault();
+      form.submit();
+    }
+  });
+})();
+</script>
+
 <?php if ($isPicker): ?>
 <script>
 (function(){
@@ -585,6 +611,54 @@ function printBarcode(kode, barcode) {
     if(activeRow) activeRow.classList.add('picked');
   }
 
+  function trySendToPOS(valueToSend){
+    // 1) Cara ideal: POS punya handler sendiri
+    if (window.opener && typeof window.opener.setItemFromPicker === 'function') {
+      window.opener.setItemFromPicker(valueToSend);
+      setTimeout(()=>window.close(), 50);
+      return true;
+    }
+
+    // 2) Cara simpel: isi input barcode di POS secara langsung (tanpa minta fungsi POS)
+    //    -> ini akan jalan kalau field barcode di POS punya id/name umum.
+    try {
+      if (window.opener && window.opener.document) {
+        const doc = window.opener.document;
+
+        const input =
+          doc.querySelector('#barcodeInput') ||                 // REKOMENDASI: pakai id ini di POS
+          doc.querySelector('input[name="barcode"]') ||
+          doc.querySelector('input[name="kode"]') ||
+          doc.querySelector('input[name="scan"]') ||
+          doc.querySelector('input[data-role="barcode"]');
+
+        if (input) {
+          input.value = valueToSend;
+          input.focus();
+          input.dispatchEvent(new Event('input', { bubbles:true }));
+          input.dispatchEvent(new Event('change', { bubbles:true }));
+
+          // kalau POS proses via submit form, coba submit form terdekat
+          const form = input.closest('form');
+          if (form && typeof form.requestSubmit === 'function') {
+            form.requestSubmit();
+          } else {
+            // fallback: simulate enter
+            input.dispatchEvent(new KeyboardEvent('keydown', { key:'Enter', bubbles:true }));
+            input.dispatchEvent(new KeyboardEvent('keyup',   { key:'Enter', bubbles:true }));
+          }
+
+          setTimeout(()=>window.close(), 50);
+          return true;
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    return false;
+  }
+
   function pickRow(tr){
     if(!tr) return;
 
@@ -595,13 +669,14 @@ function printBarcode(kode, barcode) {
     const valueToSend = barcode || kode;
     if(!valueToSend) return;
 
-    if (window.opener && typeof window.opener.setItemFromPicker === 'function') {
-      window.opener.setItemFromPicker(valueToSend);
-      window.close();
-      return;
+    const ok = trySendToPOS(valueToSend);
+    if(!ok){
+      alert(
+        'POS tidak bisa menerima item.\n' +
+        'Solusi paling rapi: tambahkan fungsi window.setItemFromPicker(value) di halaman POS,\n' +
+        'atau pastikan input barcode di POS pakai id="barcodeInput".'
+      );
     }
-
-    alert('POS belum terbuka atau tidak bisa menerima item.');
   }
 
   // klik sekali: aktifkan row
@@ -621,11 +696,17 @@ function printBarcode(kode, barcode) {
 
   // shortcut keyboard: Enter pilih, Esc tutup
   window.addEventListener('keydown', (e)=>{
+    // kalau fokus lagi di input pencarian, Enter harus submit filter (ditangani script filter)
+    const activeEl = document.activeElement;
+    const isTypingQuery = activeEl && activeEl.name === 'q';
+
     if(e.key === 'Escape'){
       window.close();
       return;
     }
+
     if(e.key === 'Enter'){
+      if(isTypingQuery) return; // biarkan form filter yang submit
       if(activeRow){
         e.preventDefault();
         pickRow(activeRow);
