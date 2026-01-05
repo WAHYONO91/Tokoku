@@ -160,9 +160,5 @@ Aplikasi \*\*Point of Sale (POS)\*\* dan manajemen toko berbasis \*\*PHP\*\* + \
 
 
 
-\## Lisensi
-
 Tambahkan lisensi jika diperlukan (MIT/Apache-2.0/dll). Jika tidak, hapus bagian ini.
-
-
-
+informasi terkait aplikasi hubung saya di WA 085875099445 
