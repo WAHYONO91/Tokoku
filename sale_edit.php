@@ -1230,30 +1230,50 @@ async function loadMemberByKode(kodeRaw) {
   // ==========================
   // Render cart
   // ==========================
-  function renderCart(){
-    tbody.innerHTML='';
-    let subtotal=0, totalItems=0;
+    function renderCart(){
+    tbody.innerHTML = '';
 
-    cart.forEach((r,idx)=>{
-      const harga = r.prices[(r.level-1)]||0;
-      const total = r.qty*harga;
-      subtotal += total; totalItems += r.qty;
+    let subtotal = 0;
+    let totalItems = 0;
 
-      const tr=document.createElement('tr');
-      if(idx===activeIdx) tr.classList.add('active-row');
+    cart.forEach((r, idx) => {
+      // pastikan prices selalu array 4 angka
+      const h1 = parseInt((r.prices && r.prices[0]) ?? 0, 10) || 0;
+      const h2 = parseInt((r.prices && r.prices[1]) ?? 0, 10) || 0;
+      const h3 = parseInt((r.prices && r.prices[2]) ?? 0, 10) || 0;
+      const h4 = parseInt((r.prices && r.prices[3]) ?? 0, 10) || 0;
 
-      tr.innerHTML=`
+      const lvl = parseInt(r.level ?? 1, 10) || 1;
+      const level = Math.min(4, Math.max(1, lvl));
+      r.level = level;
+
+      const harga = [h1, h2, h3, h4][level - 1] || 0;
+
+      const q = parseInt(r.qty ?? 0, 10) || 0;
+      r.qty = q < 0 ? 0 : q;
+
+      const total = r.qty * harga;
+
+      subtotal += total;
+      totalItems += r.qty;
+
+      const tr = document.createElement('tr');
+      if (idx === activeIdx) tr.classList.add('active-row');
+
+      tr.innerHTML = `
         <td class="col-kode">${r.kode || '-'}</td>
         <td>${r.nama || '-'}</td>
-        <td class="right col-qty"><input type="number" min="0" value="${r.qty}" class="qtyInput"></td>
+        <td class="right col-qty">
+          <input type="number" min="0" value="${r.qty}" class="qtyInput">
+        </td>
         <td class="right col-harga">
           <div class="priceRow">
             <span class="priceText">${formatID(harga)}</span>
             <select class="lvlSel" title="Pilih Level Harga">
-              <option value="1"${r.level===1?' selected':''}>H1</option>
-              <option value="2"${r.level===2?' selected':''}>H2</option>
-              <option value="3"${r.level===3?' selected':''}>H3</option>
-              <option value="4"${r.level===4?' selected':''}>H4</option>
+              <option value="1"${level===1?' selected':''}>H1 • ${formatID(h1)}</option>
+              <option value="2"${level===2?' selected':''}>H2 • ${formatID(h2)}</option>
+              <option value="3"${level===3?' selected':''}>H3 • ${formatID(h3)}</option>
+              <option value="4"${level===4?' selected':''}>H4 • ${formatID(h4)}</option>
             </select>
           </div>
         </td>
@@ -1267,7 +1287,8 @@ async function loadMemberByKode(kodeRaw) {
         </td>
       `;
 
-      tr.addEventListener('click', (ev)=>{
+      // klik baris -> aktif (kecuali klik input/select/button)
+      tr.addEventListener('click', (ev) => {
         const tag = ev.target.tagName;
         if (tag === 'INPUT' || tag === 'SELECT' || tag === 'BUTTON') return;
         activeIdx = idx;
@@ -1276,48 +1297,58 @@ async function loadMemberByKode(kodeRaw) {
 
       tbody.appendChild(tr);
 
+      // qty input
       const qtyInput = tr.querySelector('.qtyInput');
-      qtyInput.addEventListener('input', (e)=>{
-        const v = parseInt(e.target.value||'0',10);
-        cart[idx].qty = v>=0 ? v : 0;
-        activeIdx=idx;
-        renderCart();
-      });
-
-      const lvlSel = tr.querySelector('.lvlSel');
-      lvlSel.addEventListener('change', (e)=>{
-        cart[idx].level = parseInt(e.target.value||'1',10);
+      qtyInput.addEventListener('input', (e) => {
+        const v = parseInt(e.target.value || '0', 10);
+        cart[idx].qty = (isNaN(v) || v < 0) ? 0 : v;
         activeIdx = idx;
         renderCart();
       });
 
-      const codeInput = tr.querySelector('.codeInput');
-      const btnReplace = tr.querySelector('.btnReplace');
-      btnReplace.addEventListener('click', ()=>{
-        const code = (codeInput.value || '').trim();
-        if(!code){ alert('Ketik kode/barcode dulu.'); return; }
-        replaceRowItem(idx, code);
-        codeInput.value='';
+      // level select
+      const lvlSel = tr.querySelector('.lvlSel');
+      lvlSel.addEventListener('change', (e) => {
+        const v = parseInt(e.target.value || '1', 10);
+        cart[idx].level = Math.min(4, Math.max(1, v));
+        activeIdx = idx;
+        renderCart();
       });
 
+      // ganti item pakai kode/barcode
+      const codeInput = tr.querySelector('.codeInput');
+      const btnReplace = tr.querySelector('.btnReplace');
+      btnReplace.addEventListener('click', () => {
+        const code = (codeInput.value || '').trim();
+        if (!code) { alert('Ketik kode/barcode dulu.'); return; }
+        replaceRowItem(idx, code);
+        codeInput.value = '';
+      });
+
+      // hapus baris
       const btnDel = tr.querySelector('.btnDel');
-      btnDel.addEventListener('click', ()=>{
-        cart.splice(idx,1);
-        if(activeIdx>=cart.length) activeIdx = cart.length-1;
+      btnDel.addEventListener('click', () => {
+        cart.splice(idx, 1);
+        if (activeIdx >= cart.length) activeIdx = cart.length - 1;
         renderCart();
       });
     });
 
+    // ===== footer hitung-hitung =====
     subtotalEl.textContent = formatID(subtotal);
 
-    const dVal = parseInt(discountEl.value||'0',10);
+    const dVal = parseInt(discountEl.value || '0', 10) || 0;
     const dMode = discountModeEl.value;
-    const disc = (dMode==='pct') ? Math.floor(subtotal*(dVal/100)) : Math.min(dVal, subtotal);
+    const disc = (dMode === 'pct')
+      ? Math.floor(subtotal * (dVal / 100))
+      : Math.min(dVal, subtotal);
 
-    const taxVal = parseInt(taxEl.value||'0',10);
+    const taxVal = parseInt(taxEl.value || '0', 10) || 0;
     const taxMode = taxModeEl.value;
     const taxBase = Math.max(0, subtotal - disc);
-    const taxAmt = (taxMode==='pct') ? Math.floor(taxBase*(taxVal/100)) : taxVal;
+    const taxAmt = (taxMode === 'pct')
+      ? Math.floor(taxBase * (taxVal / 100))
+      : taxVal;
 
     const pointDisc = hitungPointDiscount(Math.max(0, subtotal - disc + taxAmt));
 
