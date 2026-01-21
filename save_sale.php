@@ -1,15 +1,16 @@
 <?php
 // save_sale.php
-// Simpan transaksi dari POS + hitung & update poin (earn + redeem)
-// Output: halaman print-helper (auto print & close)
+// Simpan transaksi POS (Tunai / Piutang)
+// + update poin
+// + cetak struk
 
 require_once __DIR__.'/config.php';
 require_once __DIR__.'/functions.php';
 require_login();
 
-// -------------------------------------
-// 1. Ambil payload dari POS
-// -------------------------------------
+/* =====================================================
+ * 1. Ambil payload
+ * ===================================================== */
 $payload = $_POST['payload'] ?? '';
 if (!$payload) {
     http_response_code(400);
@@ -22,19 +23,21 @@ if (!$data || !is_array($data)) {
     die('Gagal simpan penjualan: payload tidak valid');
 }
 
-// Field dari POS
+/* =====================================================
+ * 2. Ambil field dari POS
+ * ===================================================== */
+$pay_mode         = $data['pay_mode'] ?? 'cash'; // cash | ar
 $member_kode      = $data['member_kode'] ?? null;
-$member_nama      = $data['member_nama'] ?? null; // hanya info
-$member_poin_awal = (int)($data['member_poin'] ?? 0);
+$member_nama      = $data['member_nama'] ?? null;
 
 $shift            = $data['shift'] ?? '1';
 $tunai            = (int)($data['tunai'] ?? 0);
 $items            = $data['items'] ?? [];
 
 $discountInput    = (int)($data['discount'] ?? 0);
-$discountMode     = $data['discount_mode'] ?? 'rp'; // 'rp' / 'pct'
+$discountMode     = $data['discount_mode'] ?? 'rp';
 $taxInput         = (int)($data['tax'] ?? 0);
-$taxMode          = $data['tax_mode'] ?? 'rp';      // 'rp' / 'pct'
+$taxMode          = $data['tax_mode'] ?? 'rp';
 
 $poin_ditukar     = (int)($data['poin_ditukar'] ?? 0);
 $point_discount   = (int)($data['point_discount'] ?? 0);
@@ -47,9 +50,9 @@ if (empty($items)) {
     die('Gagal simpan penjualan: item kosong');
 }
 
-// -------------------------------------
-// 2. Hitung SUBTOTAL dari items (safety)
-// -------------------------------------
+/* =====================================================
+ * 3. Hitung subtotal (safety)
+ * ===================================================== */
 $subtotal = 0;
 foreach ($items as $it) {
     $qty   = max(1, (int)($it['qty'] ?? 0));
@@ -57,9 +60,9 @@ foreach ($items as $it) {
     $subtotal += $qty * $harga;
 }
 
-// -------------------------------------
-// 3. Hitung diskon & pajak (Rp / %)
-// -------------------------------------
+/* =====================================================
+ * 4. Hitung diskon & pajak
+ * ===================================================== */
 $discountInput = max(0, $discountInput);
 $taxInput      = max(0, $taxInput);
 
@@ -82,28 +85,43 @@ if ($taxInput > 0) {
     }
 }
 
-// Total sebelum potongan poin (dasar earning poin)
-$total_no_point = $subtotal - $disc + $taxAmt;
-if ($total_no_point < 0) $total_no_point = 0;
+$total_no_point = max(0, $subtotal - $disc + $taxAmt);
 
-// -------------------------------------
-// 4. Potongan poin & total final
-// -------------------------------------
+/* =====================================================
+ * 5. Potongan poin & total akhir
+ * ===================================================== */
 $point_discount = max(0, $point_discount);
 if ($point_discount > $total_no_point) {
     $point_discount = $total_no_point;
 }
 
-$total = $total_no_point - $point_discount;
-if ($total < 0) $total = 0;
+$total = max(0, $total_no_point - $point_discount);
 
-// Kembalian
-$kembalian = $tunai - $total;
-if ($kembalian < 0) $kembalian = 0;
+/* =====================================================
+ * 6. Validasi pembayaran (INI FIX UTAMA)
+ * ===================================================== */
+if ($pay_mode === 'cash') {
+    if ($tunai < $total) {
+        http_response_code(400);
+        die('Tunai belum cukup / belum diinput.');
+    }
+    $kembalian = $tunai - $total;
+} elseif ($pay_mode === 'ar') {
+    if (!$member_kode) {
+        http_response_code(400);
+        die('Transaksi piutang wajib memilih member.');
+    }
+    // piutang: tidak ada tunai & kembalian
+    $tunai = 0;
+    $kembalian = 0;
+} else {
+    http_response_code(400);
+    die('Metode pembayaran tidak valid.');
+}
 
-// -------------------------------------
-// 5. Ambil aturan earning poin dari settings
-// -------------------------------------
+/* =====================================================
+ * 7. Hitung poin earning
+ * ===================================================== */
 $setting = $pdo->query("
     SELECT
         points_per_rupiah,
@@ -117,58 +135,42 @@ $global_ppr = (int)($setting['points_per_rupiah'] ?? 0);
 $ppr_umum   = (int)($setting['points_per_rupiah_umum'] ?? 0);
 $ppr_grosir = (int)($setting['points_per_rupiah_grosir'] ?? 0);
 
-$threshold_umum   = $ppr_umum   > 0 ? $ppr_umum   : $global_ppr;
-$threshold_grosir = $ppr_grosir > 0 ? $ppr_grosir : $global_ppr;
-
-// -------------------------------------
-// 6. Ambil jenis member (umum / grosir)
-// -------------------------------------
 $member_jenis = 'umum';
 if ($member_kode) {
     $mstmt = $pdo->prepare("SELECT jenis FROM members WHERE kode = ?");
     $mstmt->execute([$member_kode]);
     $mrow = $mstmt->fetch(PDO::FETCH_ASSOC);
     if ($mrow) {
-        $mj = strtolower(trim((string)$mrow['jenis']));
-        $member_jenis = ($mj === 'grosir' || $mj === 'umum') ? $mj : 'umum';
+        $mj = strtolower(trim($mrow['jenis']));
+        if (in_array($mj, ['umum','grosir'], true)) {
+            $member_jenis = $mj;
+        }
     }
 }
 
-// -------------------------------------
-// 7. Hitung poin earning (dari total_no_point)
-// -------------------------------------
+$threshold = ($member_jenis === 'grosir')
+    ? ($ppr_grosir ?: $global_ppr)
+    : ($ppr_umum   ?: $global_ppr);
+
 $points_award = 0;
-if ($member_kode) {
-    $threshold = ($member_jenis === 'grosir')
-        ? ($threshold_grosir ?: $threshold_umum)
-        : ($threshold_umum ?: $threshold_grosir);
-
-    if ($threshold > 0 && $total_no_point > 0) {
-        $points_award = (int) floor($total_no_point / $threshold);
-    }
+if ($member_kode && $threshold > 0) {
+    $points_award = (int) floor($total_no_point / $threshold);
 }
 
-// -------------------------------------
-// 8. Validasi tunai
-// -------------------------------------
-if ($tunai < $total) {
-    http_response_code(400);
-    die('Tunai belum cukup / belum diinput.');
-}
-
-// -------------------------------------
-// 9. Simpan DB (sales, sale_items, stok, update poin)
-// -------------------------------------
-$invoice_no = 'S' . date('YmdHis');
+/* =====================================================
+ * 8. Simpan DB (TRANSACTION)
+ * ===================================================== */
+$invoice_no = 'S'.date('YmdHis');
 
 try {
     $pdo->beginTransaction();
 
-    // ✅ INSERT SALES (Tambahkan poin_ditukar & point_discount)
+    // SALES
     $stmt = $pdo->prepare("
         INSERT INTO sales
-            (invoice_no, member_kode, shift, subtotal, discount, tax, total, tunai, kembalian,
-             created_by, created_at, status, discount_mode, tax_mode, poin_ditukar, point_discount)
+            (invoice_no, member_kode, shift, subtotal, discount, tax,
+             total, tunai, kembalian, created_by, created_at, status,
+             discount_mode, tax_mode, poin_ditukar, point_discount)
         VALUES
             (?,?,?,?,?,?,?,?,?, ?, NOW(),'OK', ?, ?, ?, ?)
     ");
@@ -190,7 +192,7 @@ try {
     ]);
     $sale_id = (int)$pdo->lastInsertId();
 
-    // Insert ITEMS + update stok
+    // SALE ITEMS + STOK
     $stmtItem = $pdo->prepare("
         INSERT INTO sale_items (sale_id, item_kode, nama, qty, harga, total)
         VALUES (?,?,?,?,?,?)
@@ -198,29 +200,48 @@ try {
 
     foreach ($items as $it) {
         $kode  = (string)($it['kode'] ?? '');
+        if ($kode === '') continue;
+
         $nama  = (string)($it['nama'] ?? '');
         $qty   = max(1, (int)($it['qty'] ?? 0));
         $harga = max(0, (int)($it['harga'] ?? 0));
         $line_total = $qty * $harga;
 
-        if ($kode === '') continue;
-
         $stmtItem->execute([$sale_id, $kode, $nama, $qty, $harga, $line_total]);
-
-        // stok lokasi "toko"
         adjust_stock($pdo, $kode, $location, -$qty);
     }
 
-    // Update poin member (earn + redeem)
+    // UPDATE POIN MEMBER
     if ($member_kode) {
-        $delta_points = $points_award - $poin_ditukar;
-
+        $delta = $points_award - $poin_ditukar;
         $up = $pdo->prepare("
             UPDATE members
             SET points = GREATEST(COALESCE(points,0) + ?, 0)
             WHERE kode = ?
         ");
-        $up->execute([$delta_points, $member_kode]);
+        $up->execute([$delta, $member_kode]);
+    }
+
+    // INSERT PIUTANG
+    if ($pay_mode === 'ar') {
+        $m = $pdo->prepare("SELECT id FROM members WHERE kode = ?");
+        $m->execute([$member_kode]);
+        $member = $m->fetch(PDO::FETCH_ASSOC);
+        if (!$member) {
+            throw new Exception('Member tidak ditemukan');
+        }
+
+        $ar = $pdo->prepare("
+            INSERT INTO member_ar
+            (member_id, invoice_no, total, paid, remaining, due_date, status)
+            VALUES (?, ?, ?, 0, ?, DATE_ADD(CURDATE(), INTERVAL 30 DAY), 'OPEN')
+        ");
+        $ar->execute([
+            $member['id'],
+            $invoice_no,
+            $total,
+            $total
+        ]);
     }
 
     $pdo->commit();
@@ -231,9 +252,9 @@ try {
     die('Gagal simpan penjualan: '.$e->getMessage());
 }
 
-// -------------------------------------
-// 10. PRINT HELPER: buka sale_print.php, print, close
-// -------------------------------------
+/* =====================================================
+ * 9. PRINT HELPER
+ * ===================================================== */
 $printUrl = "sale_print.php?id=".$sale_id;
 ?>
 <!doctype html>
@@ -242,30 +263,11 @@ $printUrl = "sale_print.php?id=".$sale_id;
   <meta charset="utf-8">
   <title>Cetak Struk...</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body{font-family:system-ui,Arial,sans-serif;padding:16px}
-    .muted{color:#666;font-size:14px}
-  </style>
 </head>
 <body>
   <div><strong>Menyiapkan struk…</strong></div>
-  <div class="muted">Jika struk tidak otomatis tercetak, klik tombol di bawah.</div>
-  <p>
-    <button id="btn" type="button">Buka Struk</button>
-  </p>
-
-<script>
-  const url = <?= json_encode($printUrl) ?>;
-
-  function go(){
-    // pindah ke halaman struk (di window printWindow)
-    location.href = url;
-  }
-
-  document.getElementById('btn').addEventListener('click', go);
-
-  // auto
-  setTimeout(go, 80);
-</script>
+  <script>
+    location.href = <?= json_encode($printUrl) ?>;
+  </script>
 </body>
 </html>

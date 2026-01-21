@@ -1,0 +1,61 @@
+-- Pastikan sudah USE tokoapp;
+-- USE tokoapp;
+
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- ===== CHILD TABLES DULU =====
+DELETE FROM ar_payments;
+DELETE FROM sale_items;
+DELETE FROM purchase_items;
+DELETE FROM stock_mutations;
+DELETE FROM item_stocks;
+
+-- Jika ada tabel stok ringkas/legacy lain:
+DELETE FROM stocks;
+
+-- Buku kas manual / ledger (tidak berelasi sebagai child)
+DELETE FROM cash_ledger;
+DELETE FROM cashier_cash;
+
+-- ===== PARENT TABLES =====
+DELETE FROM sales;         -- parent dari sale_items
+DELETE FROM purchases;     -- parent dari purchase_items
+DELETE FROM sales_ar;      -- parent dari ar_payments
+
+-- ===== MASTER DATA (DIKOSONGKAN JUGA, KECUALI settings) =====
+DELETE FROM items;
+DELETE FROM members;
+DELETE FROM suppliers;
+DELETE FROM units;
+DELETE FROM locations;
+
+-- Jika ingin juga kosongkan users, biarkan baris di bawah aktif.
+-- Kalau ingin mempertahankan akun login, HAPUS baris ini.
+DELETE FROM users;
+
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- ===== RESET AUTO_INCREMENT (opsional tapi disarankan) =====
+ALTER TABLE ar_payments      AUTO_INCREMENT = 1;
+ALTER TABLE sale_items       AUTO_INCREMENT = 1;
+ALTER TABLE purchase_items   AUTO_INCREMENT = 1;
+ALTER TABLE stock_mutations  AUTO_INCREMENT = 1;
+ALTER TABLE item_stocks      AUTO_INCREMENT = 1;
+ALTER TABLE stocks           AUTO_INCREMENT = 1;
+
+ALTER TABLE cash_ledger      AUTO_INCREMENT = 1;
+ALTER TABLE cashier_cash     AUTO_INCREMENT = 1;
+
+ALTER TABLE sales            AUTO_INCREMENT = 1;
+ALTER TABLE purchases        AUTO_INCREMENT = 1;
+ALTER TABLE sales_ar         AUTO_INCREMENT = 1;
+
+ALTER TABLE items            AUTO_INCREMENT = 1;
+ALTER TABLE members          AUTO_INCREMENT = 1;
+ALTER TABLE suppliers        AUTO_INCREMENT = 1;
+ALTER TABLE units            AUTO_INCREMENT = 1;
+ALTER TABLE locations        AUTO_INCREMENT = 1;
+
+-- ALTER TABLE users            AUTO_INCREMENT = 1; -- aktifkan jika tadi dihapus datanya
+
+-- Tidak ada operasi pada tabel `settings` (dibiarkan utuh)

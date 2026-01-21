@@ -200,6 +200,10 @@ $role      = $logged_in ? ($_SESSION['user']['role'] ?? null) : null;
     <a class="menu-card" href="backup_tokoapp.php" target="_blank" rel="noopener">
       <span class="menu-icon">💾</span><span>Backup DB</span>
     </a>
+    <a class="menu-card" href="member_ar_list.php">
+  <span class="menu-icon">🧾</span><span>Piutang Member</span>
+</a>
+
   <?php elseif ($role === 'kasir'): ?>
     <a class="menu-card" href="index.php">
       <span class="menu-icon">📊</span><span>Dashboard</span>
@@ -225,6 +229,10 @@ $role      = $logged_in ? ($_SESSION['user']['role'] ?? null) : null;
     <a class="menu-card" href="auth/logout.php">
       <span class="menu-icon">🚪</span><span>Logout</span>
     </a>
+    <a class="menu-card" href="member_ar_list.php">
+  <span class="menu-icon">🧾</span><span>Piutang Member</span>
+</a>
+
   <?php endif; ?>
 </div>
 <?php endif; ?>

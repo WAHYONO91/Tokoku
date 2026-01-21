@@ -353,6 +353,152 @@ if (table_exists($pdo,'items')) {
       <p style="margin-bottom:0;opacity:.85">Bulan ini: <?= 'Rp '.number_format($pb_month,0,',','.') ?></p>
     </article>
   </div>
+  <?php
+/* ======================
+   RINGKASAN PIUTANG MEMBER (member_ar)
+   ====================== */
+$ar_total_open = 0;
+$ar_total_paid = 0;
+$ar_total_rem  = 0;
+$ar_cnt_open   = 0;
+$ar_cnt_over   = 0;
+
+if (table_exists($pdo, 'member_ar')) {
+  $st_ar = $pdo->query("
+    SELECT
+      COALESCE(SUM(CASE WHEN status='OPEN' THEN total ELSE 0 END),0) AS total_open,
+      COALESCE(SUM(paid),0) AS total_paid,
+      COALESCE(SUM(CASE WHEN status='OPEN' THEN remaining ELSE 0 END),0) AS total_remaining,
+      COALESCE(SUM(CASE WHEN status='OPEN' THEN 1 ELSE 0 END),0) AS cnt_open,
+      COALESCE(SUM(CASE WHEN status='OPEN' AND due_date < CURDATE() THEN 1 ELSE 0 END),0) AS cnt_overdue
+    FROM member_ar
+  ");
+  $ar_sum = $st_ar->fetch(PDO::FETCH_ASSOC) ?: [];
+  $ar_total_open = (int)($ar_sum['total_open'] ?? 0);
+  $ar_total_paid = (int)($ar_sum['total_paid'] ?? 0);
+  $ar_total_rem  = (int)($ar_sum['total_remaining'] ?? 0);
+  $ar_cnt_open   = (int)($ar_sum['cnt_open'] ?? 0);
+  $ar_cnt_over   = (int)($ar_sum['cnt_overdue'] ?? 0);
+}
+?>
+
+<article style="margin:0 0 1.2rem 0;">
+  <header style="display:flex;justify-content:space-between;align-items:center;gap:.75rem;flex-wrap:wrap;">
+    <div style="font-weight:650;">Ringkasan Piutang Member</div>
+    <a class="menu-card" href="member_ar_list.php" style="text-decoration:none;">
+      <span class="menu-icon">🧾</span><span>Lihat Semua Piutang</span>
+    </a>
+  </header>
+
+  <?php if (!table_exists($pdo, 'member_ar')): ?>
+    <p style="opacity:.85;margin:.5rem 0">
+      Tabel <code>member_ar</code> belum tersedia.
+    </p>
+  <?php else: ?>
+    <div style="display:grid; gap:1rem; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); margin-top:.8rem;">
+      <article style="margin:0;">
+        <header>Total Piutang OPEN</header>
+        <strong style="font-size:1.35rem;"><?= 'Rp '.number_format($ar_total_open,0,',','.') ?></strong>
+        <p style="margin-bottom:0;opacity:.85">Jumlah open: <?= number_format($ar_cnt_open,0,',','.') ?></p>
+      </article>
+
+      <article style="margin:0;">
+        <header>Sisa Tagihan</header>
+        <strong style="font-size:1.35rem;"><?= 'Rp '.number_format($ar_total_rem,0,',','.') ?></strong>
+        <p style="margin-bottom:0;opacity:.85">Yang belum tertagih</p>
+      </article>
+
+      <article style="margin:0;">
+        <header>Overdue</header>
+        <strong style="font-size:1.35rem;"><?= number_format($ar_cnt_over,0,',','.') ?></strong>
+        <p style="margin-bottom:0;opacity:.85">Lewat jatuh tempo</p>
+      </article>
+
+      <article style="margin:0;">
+        <header>Total Terbayar</header>
+        <strong style="font-size:1.35rem;"><?= 'Rp '.number_format($ar_total_paid,0,',','.') ?></strong>
+        <p style="margin-bottom:0;opacity:.85">Akumulasi pembayaran</p>
+      </article>
+    </div>
+  <?php endif; ?>
+</article>
+
+<?php
+$ar_latest = [];
+if (table_exists($pdo, 'member_ar') && table_exists($pdo, 'members')) {
+  $st = $pdo->query("
+    SELECT
+      ar.id, ar.invoice_no, ar.remaining, ar.due_date, ar.status, ar.created_at,
+      m.kode AS member_kode, m.nama AS member_nama,
+      CASE WHEN ar.status='OPEN' AND ar.due_date < CURDATE() THEN 1 ELSE 0 END AS is_overdue
+    FROM member_ar ar
+    JOIN members m ON m.id = ar.member_id
+    ORDER BY ar.created_at DESC
+    LIMIT 10
+  ");
+  $ar_latest = $st->fetchAll(PDO::FETCH_ASSOC);
+}
+?>
+
+<article style="margin:0 0 1.2rem 0;">
+  <header style="display:flex;justify-content:space-between;align-items:center;gap:.75rem;flex-wrap:wrap;">
+    <div style="font-weight:650;">Piutang Terbaru (Top 10)</div>
+    <div class="muted" style="font-size:.85rem;">Klik “Bayar” untuk cicilan</div>
+  </header>
+
+  <?php if (empty($ar_latest)): ?>
+    <p style="opacity:.85;margin:.5rem 0">Belum ada data piutang.</p>
+  <?php else: ?>
+    <div style="overflow:auto;margin-top:.6rem;">
+      <table class="table-small" style="min-width:900px">
+        <thead>
+          <tr>
+            <th>Tanggal</th>
+            <th>Invoice</th>
+            <th>Member</th>
+            <th class="right">Sisa</th>
+            <th>Jatuh Tempo</th>
+            <th>Status</th>
+            <th class="no-print">Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+        <?php foreach($ar_latest as $r): 
+          $isOver = (int)$r['is_overdue'] === 1;
+          $badge = ($r['status']==='PAID') ? '✅ LUNAS' : ($isOver ? '⚠️ OVERDUE' : '⏳ OPEN');
+        ?>
+          <tr>
+            <td><?= htmlspecialchars(date('Y-m-d', strtotime($r['created_at']))) ?></td>
+            <td><?= htmlspecialchars($r['invoice_no']) ?></td>
+            <td><?= htmlspecialchars($r['member_kode']) ?> — <?= htmlspecialchars($r['member_nama']) ?></td>
+            <td class="right"><b><?= number_format((float)$r['remaining'],0,',','.') ?></b></td>
+            <td><?= htmlspecialchars($r['due_date']) ?></td>
+            <td><?= htmlspecialchars($badge) ?></td>
+            <td class="no-print">
+              <div style="display:flex;gap:.35rem;flex-wrap:wrap;">
+                <?php if (($r['status'] ?? '') === 'OPEN'): ?>
+                  <a class="menu-card"
+                     style="display:inline-flex;gap:.25rem;padding:.15rem .35rem;border-radius:.45rem;"
+                     href="member_ar_pay_form.php?id=<?= (int)$r['id'] ?>">
+                    <span class="menu-icon">💳</span><span>Bayar</span>
+                  </a>
+                <?php endif; ?>
+
+                <a class="menu-card"
+                   style="display:inline-flex;gap:.25rem;padding:.15rem .35rem;border-radius:.45rem;<?= (($r['status'] ?? '') !== 'OPEN') ? 'opacity:.7;' : '' ?>"
+                   href="member_ar_letter.php?id=<?= (int)$r['id'] ?>" target="_blank" rel="noopener">
+                  <span class="menu-icon">📄</span><span>Surat</span>
+                </a>
+              </div>
+            </td>
+          </tr>
+        <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+  <?php endif; ?>
+</article>
+
 
   <!-- GRID GRAFIK -->
   <div style="display:grid; gap:1rem; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); align-items:start">

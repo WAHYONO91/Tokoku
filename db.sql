@@ -1,0 +1,191 @@
+-- Create database (optional): CREATE DATABASE tokoapp CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+-- USE tokoapp;
+
+-- Users (admin, kasir). Shift 1/2 recorded per sale, not per user.
+CREATE TABLE IF NOT EXISTS users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(50) UNIQUE NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  role ENUM('admin','kasir') NOT NULL DEFAULT 'kasir',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Settings (e.g., point rate: berapa Rupiah per 1 poin)
+CREATE TABLE IF NOT EXISTS settings (
+  id INT PRIMARY KEY,
+  points_per_rupiah DECIMAL(18,8) NOT NULL DEFAULT 0.0001  -- contoh: 1 poin per Rp10.000 -> 0.0001
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO settings (id, points_per_rupiah) VALUES (1, 0.0001) ON DUPLICATE KEY UPDATE points_per_rupiah=values(points_per_rupiah);
+
+-- Master barang
+CREATE TABLE IF NOT EXISTS items (
+  kode VARCHAR(50) PRIMARY KEY,
+  barcode VARCHAR(50) UNIQUE,
+  nama VARCHAR(255) NOT NULL,
+  harga_beli BIGINT NOT NULL DEFAULT 0,
+  harga_jual1 BIGINT NOT NULL DEFAULT 0,
+  harga_jual2 BIGINT NOT NULL DEFAULT 0,
+  harga_jual3 BIGINT NOT NULL DEFAULT 0,
+  harga_jual4 BIGINT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Master member (pelanggan)
+CREATE TABLE IF NOT EXISTS members (
+  kode VARCHAR(50) PRIMARY KEY,
+  nama VARCHAR(255) NOT NULL,
+  alamat TEXT,
+  tlp VARCHAR(50),
+  poin BIGINT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Master supplier
+CREATE TABLE IF NOT EXISTS suppliers (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nama VARCHAR(255) NOT NULL,
+  alamat TEXT,
+  tlp VARCHAR(50),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Penjualan (header)
+CREATE TABLE IF NOT EXISTS sales (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  tanggal DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  user_id INT NOT NULL,
+  member_kode VARCHAR(50) NULL,
+  subtotal BIGINT NOT NULL DEFAULT 0,
+  total BIGINT NOT NULL DEFAULT 0,
+  tunai BIGINT NOT NULL DEFAULT 0,
+  kembalian BIGINT NOT NULL DEFAULT 0,
+  poin_didapat BIGINT NOT NULL DEFAULT 0,
+  shift ENUM('1','2') NOT NULL DEFAULT '1',
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (member_kode) REFERENCES members(kode)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Detail penjualan
+CREATE TABLE IF NOT EXISTS sale_items (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  sale_id BIGINT NOT NULL,
+  item_kode VARCHAR(50) NOT NULL,
+  nama_item VARCHAR(255) NOT NULL,
+  qty INT NOT NULL,
+  level_harga TINYINT NOT NULL,
+  harga_satuan BIGINT NOT NULL,
+  total BIGINT NOT NULL,
+  FOREIGN KEY (sale_id) REFERENCES sales(id) ON DELETE CASCADE,
+  FOREIGN KEY (item_kode) REFERENCES items(kode)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Default admin user: username=admin, password=admin123 (PLEASE change later)
+INSERT INTO users (username, password_hash, role) VALUES
+('admin', '$2y$10$FJrjv2n3H6m8Nq8tq2VNVuW3z8a8z6lR1g5aYf10N8sE6YcBf0bWy', 'admin')
+ON DUPLICATE KEY UPDATE username=username;
+-- The hash corresponds to bcrypt('admin123')
+-- ========== INVENTORY & LOCATIONS ==========
+CREATE TABLE IF NOT EXISTS item_stocks (
+  item_kode VARCHAR(50) NOT NULL,
+  location ENUM('gudang','toko') NOT NULL,
+  qty INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (item_kode, location),
+  FOREIGN KEY (item_kode) REFERENCES items(kode) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Initialize stocks for existing items (0 if missing). Run after items exist.
+INSERT INTO item_stocks (item_kode, location, qty)
+  SELECT i.kode, 'gudang', 0 FROM items i
+  ON DUPLICATE KEY UPDATE qty = qty;
+INSERT INTO item_stocks (item_kode, location, qty)
+  SELECT i.kode, 'toko', 0 FROM items i
+  ON DUPLICATE KEY UPDATE qty = qty;
+
+-- ========== PURCHASES (TRANSAKSI PEMBELIAN) ==========
+CREATE TABLE IF NOT EXISTS purchases (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  tanggal DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  user_id INT NOT NULL,
+  supplier_id INT NULL,
+  location ENUM('gudang','toko') NOT NULL DEFAULT 'gudang',
+  subtotal BIGINT NOT NULL DEFAULT 0,
+  total BIGINT NOT NULL DEFAULT 0,
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (supplier_id) REFERENCES suppliers(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS purchase_items (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  purchase_id BIGINT NOT NULL,
+  item_kode VARCHAR(50) NOT NULL,
+  nama_item VARCHAR(255) NOT NULL,
+  qty INT NOT NULL,
+  harga_beli BIGINT NOT NULL,
+  total BIGINT NOT NULL,
+  FOREIGN KEY (purchase_id) REFERENCES purchases(id) ON DELETE CASCADE,
+  FOREIGN KEY (item_kode) REFERENCES items(kode)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ========== STOCK TRANSFER (MUTASI) ==========
+CREATE TABLE IF NOT EXISTS stock_transfers (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  tanggal DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  user_id INT NOT NULL,
+  from_location ENUM('gudang','toko') NOT NULL,
+  to_location ENUM('gudang','toko') NOT NULL,
+  note VARCHAR(255),
+  FOREIGN KEY (user_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS stock_transfer_items (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  transfer_id BIGINT NOT NULL,
+  item_kode VARCHAR(50) NOT NULL,
+  qty INT NOT NULL,
+  FOREIGN KEY (transfer_id) REFERENCES stock_transfers(id) ON DELETE CASCADE,
+  FOREIGN KEY (item_kode) REFERENCES items(kode)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- ========== MINIMUM STOCK ==========
+ALTER TABLE items ADD COLUMN IF NOT EXISTS min_stock INT NOT NULL DEFAULT 0;
+
+-- ========== DISCOUNT & TAX ON SALES ==========
+ALTER TABLE sales
+  ADD COLUMN IF NOT EXISTS discount BIGINT NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS tax BIGINT NOT NULL DEFAULT 0;
+
+-- ========== SALES RETURN (RETUR PENJUALAN) ==========
+CREATE TABLE IF NOT EXISTS sales_returns (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  tanggal DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  sale_id BIGINT NOT NULL,
+  user_id INT NOT NULL,
+  member_kode VARCHAR(50) NULL,
+  total_refund BIGINT NOT NULL DEFAULT 0,
+  FOREIGN KEY (sale_id) REFERENCES sales(id),
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (member_kode) REFERENCES members(kode)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS sales_return_items (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  return_id BIGINT NOT NULL,
+  item_kode VARCHAR(50) NOT NULL,
+  qty INT NOT NULL,
+  harga_satuan BIGINT NOT NULL,
+  total BIGINT NOT NULL,
+  FOREIGN KEY (return_id) REFERENCES sales_returns(id) ON DELETE CASCADE,
+  FOREIGN KEY (item_kode) REFERENCES items(kode)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+CREATE TABLE held_transactions (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  slot TINYINT NOT NULL,           -- 1, 2, 3 (Tunda 1/2/3)
+  user_id INT NULL,                -- opsional: id user/kasir
+  state_json LONGTEXT NOT NULL,    -- isi transaksi dalam bentuk JSON
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_slot (slot),
+  KEY idx_user_slot (user_id, slot)
+);

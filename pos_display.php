@@ -555,19 +555,26 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
           </div>
         </div>
 
-        <!-- Tunai & Kembalian -->
-        <div class="kps">
-          <div>
-            <div class="muted">Tunai</div>
-            <input type="text" id="tunai" value="0" inputmode="numeric" autocomplete="off">
-          </div>
+        <!-- Metode Pembayaran -->
+<div class="kps">
+  <div>
+    <div class="muted">Metode Pembayaran</div>
+    <select id="payMode">
+      <option value="cash">Tunai</option>
+      <option value="ar">Piutang Member</option>
+    </select>
+  </div>
 
-          <div>
-            <div class="muted">Kembalian</div>
-            <input type="text" id="kembalian" readonly value="0">
-          </div>
-        </div>
+  <div>
+    <div class="muted">Tunai</div>
+    <input type="text" id="tunai" value="0" inputmode="numeric">
+  </div>
 
+  <div>
+    <div class="muted">Kembalian</div>
+    <input type="text" id="kembalian" readonly value="0">
+  </div>
+</div>
         <!-- Tombol & Parkir -->
         <div class="kps" style="grid-template-columns:1fr">
           <div class="row" style="gap:.65rem;flex-wrap:wrap">
@@ -649,6 +656,7 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
   const taxModeEl=document.getElementById('taxMode');
   const tunaiEl=document.getElementById('tunai');
   const kembalianEl=document.getElementById('kembalian');
+  const payModeEl = document.getElementById('payMode');
   const btnSave=document.getElementById('btnSave');
 
   const memberKodeEl=document.getElementById('member_kode');
@@ -960,6 +968,18 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
     if (w) w.focus();
   }
   if (btnMemberSearch) btnMemberSearch.addEventListener('click', openMemberPopupWindow);
+
+  // =========================
+// MODE PEMBAYARAN: CASH / PIUTANG
+// =========================
+payModeEl.addEventListener('change', () => {
+  const isAR = payModeEl.value === 'ar';
+  tunaiEl.disabled = isAR;
+  tunaiEl.value = '0';
+  kembalianEl.value = '0';
+  setDisplayTotal();
+});
+
 
   // =========================
   // BARCODE -> ITEM (debounce + queue)
@@ -1445,31 +1465,39 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
     const total = Math.max(0, subtotal - disc + tax - pdisc);
     const tunai = unformat(tunaiEl.value);
 
-    if(tunai < total){
-      alert('Tunai belum cukup / belum diinput.');
-      tunaiEl.focus(); tunaiEl.select && tunaiEl.select();
-      return;
-    }
+    if (payModeEl.value === 'cash' && tunai < total) {
+  alert('Tunai belum cukup.');
+  tunaiEl.focus();
+  return;
+}
+
 
     const items = cart.map(r=>{
       const harga = r.prices[(r.level-1)]||0;
       return { kode:r.kode, nama:r.nama, qty:r.qty, level:r.level, harga:harga };
     });
 
-    const payload = {
-      member_kode: memberKodeEl.value || null,
-      member_nama: memberNamaEl.value || null,
-      member_poin: parseInt(memberPoinEl.value||'0',10),
-      poin_ditukar: parseInt(poinDitukarEl.value||'0',10),
-      point_discount: unformat(tpointdiscEl.textContent),
-      shift: 1,
-      tunai: tunai,
-      items: items,
-      discount: parseInt(discountEl.value||'0',10),
-      discount_mode: discountModeEl.value,
-      tax: parseInt(taxEl.value||'0',10),
-      tax_mode: taxModeEl.value
-    };
+const payload = {
+  pay_mode: payModeEl.value, // cash | ar
+  member_kode: memberKodeEl.value || null,
+  member_nama: memberNamaEl.value || null,
+
+  member_poin: parseInt(memberPoinEl.value||'0',10),
+  poin_ditukar: parseInt(poinDitukarEl.value||'0',10),
+  point_discount: unformat(tpointdiscEl.textContent),
+
+  shift: 1,
+  total: total,
+  tunai: (payModeEl.value === 'cash') ? tunai : 0,
+
+  items: items,
+
+  discount: parseInt(discountEl.value||'0',10),
+  discount_mode: discountModeEl.value,
+  tax: parseInt(taxEl.value||'0',10),
+  tax_mode: taxModeEl.value
+};
+
 
     const kembali = Math.max(0, tunai - total);
     setDisplayKembalian(kembali);
