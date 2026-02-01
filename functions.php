@@ -128,3 +128,5 @@ function get_members(PDO $pdo, string $q = '', int $limit = 500): array {
   $st->execute($params);
   return $st->fetchAll(PDO::FETCH_ASSOC);
 }
+// ===== Modul Manajemen (Feature Toggle) =====
+require_once __DIR__ . '/includes/module_helper.php';
