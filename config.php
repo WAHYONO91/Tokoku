@@ -16,7 +16,7 @@ date_default_timezone_set('Asia/Jakarta');
 // ===== PDO (MySQL) =====
 $dsn  = 'mysql:host=127.0.0.1;dbname=tokoapp;charset=utf8mb4';
 $user = 'root';
-$pass = '';
+$pass = 'Banyumas11#';
 
 $pdo = new PDO($dsn, $user, $pass, [
     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,

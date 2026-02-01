@@ -13,7 +13,7 @@ $role      = $logged_in ? ($_SESSION['user']['role'] ?? null) : null;
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>PelangiMart</title>
+  <title>TokoAPP</title>
 
   <!-- favicon / icon tab -->
   <link rel="icon" type="image/png" href="uploads/logo.jpg">

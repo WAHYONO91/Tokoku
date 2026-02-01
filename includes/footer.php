@@ -1,1 +1,1 @@
-</main><footer class='container'><small>&copy; Pelangi mart @2025 By wahyono</small></footer></body></html>
+</main><footer class='container'><small>&copy; TokoAPP @2025 By wahyono</small></footer></body></html>

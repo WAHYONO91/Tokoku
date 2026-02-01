@@ -65,6 +65,31 @@ $total = max(0, $subtotal - $discount + $tax);
 
 $user = $_SESSION['user']['username'] ?? 'kasir';
 
+/* ========= Mapping supplier_id jika diperlukan ========= */
+$supplier_id = null;
+try {
+  // hanya mapping kalau:
+  // - supplier_kode ada
+  // - items punya supplier_id
+  // - suppliers punya kolom id dan kode (umumnya)
+  if (!empty($supplier_kode) && table_has_col($pdo, 'items', 'supplier_id')) {
+    $hasSupId   = table_has_col($pdo, 'suppliers', 'id');
+    $hasSupKode = table_has_col($pdo, 'suppliers', 'kode');
+    if ($hasSupId && $hasSupKode) {
+      $stSup = $pdo->prepare("SELECT id FROM suppliers WHERE kode = :k LIMIT 1");
+      $stSup->execute([':k' => $supplier_kode]);
+      $supplier_id = $stSup->fetchColumn();
+      if ($supplier_id !== false && $supplier_id !== null) {
+        $supplier_id = (int)$supplier_id;
+      } else {
+        $supplier_id = null;
+      }
+    }
+  }
+} catch (Throwable $e) {
+  $supplier_id = null; // fallback: tidak memblok proses pembelian
+}
+
 try {
   $pdo->beginTransaction();
 
@@ -117,10 +142,23 @@ try {
     // Tambah stok
     adjust_stock($pdo, $kode, $location, $qty);
 
-    // Update master items (harga_beli + harga_jual1..4), termasuk 0
+    // Update master items:
+    // - harga_beli + harga_jual1..4
+    // - + supplier terbaru berdasarkan transaksi (INI PERBAIKANNYA)
     $set    = [];
     $params = [':kode'=>$kode];
 
+    // ====== UPDATE SUPPLIER TERAKHIR ======
+    // Prioritas: supplier_kode (kalau ada kolomnya), kalau tidak ada baru supplier_id
+    if (!empty($supplier_kode) && table_has_col($pdo, 'items', 'supplier_kode')) {
+      $set[] = "supplier_kode = :supk";
+      $params[':supk'] = $supplier_kode;
+    } elseif (!empty($supplier_id) && table_has_col($pdo, 'items', 'supplier_id')) {
+      $set[] = "supplier_id = :supid";
+      $params[':supid'] = $supplier_id;
+    }
+
+    // ====== UPDATE HARGA ======
     if (table_has_col($pdo, 'items', 'harga_beli')) {
       $set[] = "harga_beli = :hb";
       $params[':hb'] = $hb;
@@ -171,7 +209,8 @@ try {
     <p>Total: <strong><?=number_format($total,0,',','.')?></strong></p>
     <p style="color:#10b981">
       <small>
-        Harga jual barang disimpan sesuai input pada form pembelian (termasuk jika diisi 0).
+        Harga jual barang disimpan sesuai input pada form pembelian (termasuk jika diisi 0).<br>
+        Supplier terakhir pada master barang juga diperbarui sesuai supplier transaksi (jika kolom tersedia).
       </small>
     </p>
     <a href="/tokoapp/purchases.php" class="contrast">Input Pembelian Lagi</a>
