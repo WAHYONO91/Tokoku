@@ -4,6 +4,9 @@ require_login();
 require_role(['admin']);
 require_once __DIR__ . '/includes/header.php';
 
+// Pastikan daftar modul di database up-to-date dengan MASTER
+sync_modules($pdo);
+
 $msg  = '';
 $err  = '';
 $meId = $_SESSION['user']['id'] ?? 0;

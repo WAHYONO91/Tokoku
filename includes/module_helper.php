@@ -1,46 +1,76 @@
-<?php
-/**
- * Helper: cek apakah modul aktif
- * Menggunakan PDO ($pdo) dari config.php
- */
+// Master Modul TokoApp (Samakan dengan module_management.php)
+$MENU_MASTER = [
+    'DASHBOARD'        => 'Dashboard',
+    'INVENTORY'        => 'Master Barang',
+    'MEMBER'           => 'Member',
+    'REDEEM'           => 'Tukar Poin',
+    'SUPPLIER'         => 'Supplier',
+    'PURCHASE'         => 'Pembelian',
+    'STOCK'            => 'Mutasi Stok',
+    'POS_DISPLAY'      => 'POS Display',
+    'REPORT_STOCK'     => 'Laporan Stok',
+    'REPORT_SALES'     => 'Laporan Penjualan',
+    'REPORT_PURCHASE'  => 'Laporan Pembelian',
+    'CASH_IN'          => 'Penerimaan Kas',
+    'CASH_OUT'         => 'Pengeluaran Kas',
+    'CASHIER'          => 'Kas Kasir',
+    'PIUTANG'          => 'Piutang Member',
+    'RETURNS'          => 'Retur Barang',
+    'TAGIHAN_MEMBER'   => 'Tagihan Member',
+    'TAGIHAN_SUPPLIER' => 'Tagihan Supplier',
+    'SETTINGS'         => 'Pengaturan',
+    'USERS'            => 'Users',
+    'AUDIT_TRAIL'      => 'Audit Trail',
+    'BACKUP'           => 'Backup Database',
+    'MODULE_MGMT'      => 'Manajemen Modul',
+];
+
+function sync_modules(PDO $pdo) {
+    global $MENU_MASTER;
+    $check  = $pdo->prepare("SELECT COUNT(*) FROM modules WHERE module_code=:c");
+    $insert = $pdo->prepare("INSERT INTO modules (module_code, module_name, is_active) VALUES (:c, :n, 1)");
+    foreach ($MENU_MASTER as $code => $name) {
+        $check->execute(['c'=>$code]);
+        if ($check->fetchColumn() == 0) {
+            $insert->execute(['c'=>$code,'n'=>$name]);
+        }
+    }
+}
+
 function module_active(string $code): bool
 {
-    // ambil $pdo dari scope global
     global $pdo;
+    static $userCache = null;
+    static $moduleCache = null;
 
-    // 2. Kalau user belum login -> anggap modul mati
-    if (!isset($_SESSION['user'])) {
+    if (!isset($_SESSION['user'])) return false;
+
+    // 1. Ambil status aktif modul secara sistem (Cache per request)
+    if ($moduleCache === null) {
+        $moduleCache = $pdo->query("SELECT module_code, is_active FROM modules")->fetchAll(PDO::FETCH_KEY_PAIR);
+    }
+    
+    // Jika modul belum terdaftar di tabel, default aktif untuk Admin
+    if (!isset($moduleCache[$code])) {
+        return (($_SESSION['user']['role'] ?? '') === 'admin');
+    }
+
+    if ((int)$moduleCache[$code] !== 1) {
         return false;
     }
 
-    // 3. ADMIN selalu punya akses ke semua modul (Override)
-    if (($_SESSION['user']['role'] ?? '') === 'admin') {
-        // Tetap cek apakah modul ini aktif secara sistem (opsional, tapi sebaiknya admin tetap bisa lihat meski modul nonaktif?)
-        // Untuk amannya, admin bisa lakukan segalanya.
-    }
-
-    // 4. Ambil status aktif modul secara sistem
-    $stmt = $pdo->prepare("SELECT is_active FROM modules WHERE module_code = :code LIMIT 1");
-    $stmt->execute(['code' => $code]);
-    $mod = $stmt->fetch();
-    if (!$mod || (int)$mod['is_active'] !== 1) {
-        return false;
-    }
-
-    // 5. Jika role bukan admin, cek permission spesifik user
+    // 2. Jika bukan admin, cek permission spesifik user (Cache per request)
     if (($_SESSION['user']['role'] ?? '') !== 'admin') {
-        $userId = $_SESSION['user']['id'];
-        $stPerm = $pdo->prepare("SELECT permissions FROM users WHERE id = ?");
-        $stPerm->execute([$userId]);
-        $permJson = $stPerm->fetchColumn();
-        
-        if ($permJson) {
-            $allowed = json_decode($permJson, true);
-            if (is_array($allowed) && in_array($code, $allowed)) {
-                return true;
-            }
+        if ($userCache === null) {
+            $userId = $_SESSION['user']['id'];
+            $stPerm = $pdo->prepare("SELECT permissions FROM users WHERE id = ?");
+            $stPerm->execute([$userId]);
+            $permJson = $stPerm->fetchColumn();
+            $userCache = json_decode($permJson ?: '[]', true);
+            if (!is_array($userCache)) $userCache = [];
         }
-        return false; // Tidak ada izin spesifik
+        
+        return in_array($code, $userCache);
     }
 
     return true; // Admin bypass

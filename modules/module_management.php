@@ -14,54 +14,9 @@ if (!isset($pdo)) {
     die('Koneksi database tidak ditemukan');
 }
 
-/**
- * MASTER MENU TOKOAPP
- */
-$menuMaster = [
-    'DASHBOARD'        => 'Dashboard',
-    'INVENTORY'        => 'Master Barang',
-    'MEMBER'           => 'Member',
-    'REDEEM'           => 'Tukar Poin',
-    'SUPPLIER'         => 'Supplier',
-    'PURCHASE'         => 'Pembelian',
-    'STOCK'            => 'Mutasi Stok',
-    'POS_DISPLAY'      => 'POS Display',
-    'REPORT_STOCK'     => 'Laporan Stok',
-    'REPORT_SALES'     => 'Laporan Penjualan',
-    'REPORT_PURCHASE'  => 'Laporan Pembelian',
-    'CASH_IN'          => 'Penerimaan Kas',
-    'CASH_OUT'         => 'Pengeluaran Kas',
-    'CASHIER'          => 'Kas Kasir',
-    'PIUTANG'          => 'Piutang Member',
-    'RETURNS'          => 'Retur Barang',
-
-    // 🔽 MODUL BARU
-    'TAGIHAN_MEMBER'   => 'Tagihan Member',
-    'TAGIHAN_SUPPLIER' => 'Tagihan Supplier',
-
-    'SETTINGS'         => 'Pengaturan',
-    'USERS'            => 'Users',
-    'AUDIT_TRAIL'      => 'Audit Trail',
-    'BACKUP'           => 'Backup Database',
-    'MODULE_MGMT'      => 'Manajemen Modul',
-];
-
-
-/**
- * AUTO SYNC MODULE
- */
-$check  = $pdo->prepare("SELECT COUNT(*) FROM modules WHERE module_code=:c");
-$insert = $pdo->prepare(
-    "INSERT INTO modules (module_code, module_name, is_active)
-     VALUES (:c, :n, 1)"
-);
-
-foreach ($menuMaster as $code => $name) {
-    $check->execute(['c'=>$code]);
-    if ($check->fetchColumn() == 0) {
-        $insert->execute(['c'=>$code,'n'=>$name]);
-    }
-}
+// Pastikan daftar modul di database up-to-date dengan MASTER (dari module_helper)
+sync_modules($pdo);
+$menuMaster = $MENU_MASTER; 
 
 /**
  * FETCH MODULES

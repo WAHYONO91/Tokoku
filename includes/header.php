@@ -143,8 +143,6 @@ $app_theme = $header_setting['theme'] ?? 'dark';
 <?php if($logged_in): ?>
 <div class="menu-wrap">
 
-<?php if ($role === 'admin'): ?>
-
   <?php if (module_active('DASHBOARD')): ?>
   <a class="menu-card" href="index.php"><span class="menu-icon">📊</span>Dashboard</a>
   <?php endif; ?>
@@ -206,30 +204,30 @@ $app_theme = $header_setting['theme'] ?? 'dark';
   <?php endif; ?>
   
   <?php if (module_active('TAGIHAN_MEMBER')): ?>
-<a class="menu-card" href="member_ar_billing.php">
-  <span class="menu-icon">📌</span><span>Tagihan Member</span>
-</a>
-<?php endif; ?>
+  <a class="menu-card" href="member_ar_billing.php">
+    <span class="menu-icon">📌</span><span>Tagihan Member</span>
+  </a>
+  <?php endif; ?>
 
-<?php if (module_active('TAGIHAN_SUPPLIER')): ?>
-<a class="menu-card" href="supplier_debts.php">
-  <span class="menu-icon">🚚💸</span><span>Tagihan Supplier</span>
-</a>
-<?php endif; ?>
-
+  <?php if (module_active('TAGIHAN_SUPPLIER')): ?>
+  <a class="menu-card" href="supplier_debts.php">
+    <span class="menu-icon">🚚💸</span><span>Tagihan Supplier</span>
+  </a>
+  <?php endif; ?>
 
   <?php if (module_active('SETTINGS')): ?>
   <a class="menu-card" href="settings.php"><span class="menu-icon">⚙️</span>Pengaturan</a>
   <?php endif; ?>
 
   <?php if (module_active('MODULE_MGMT')): ?>
-<a class="menu-card" href="modules/module_management.php">
-  <span class="menu-icon">🧩</span><span>Manajemen Modul</span>
-</a>
-<?php endif; ?>
+  <a class="menu-card" href="modules/module_management.php">
+    <span class="menu-icon">🧩</span><span>Manajemen Modul</span>
+  </a>
+  <?php endif; ?>
 
-<a class="menu-card" href="admin_update.php"><span class="menu-icon">🚀</span>Update Sistem</a>
-
+  <?php if ($role === 'admin'): ?>
+  <a class="menu-card" href="admin_update.php"><span class="menu-icon">🚀</span>Update Sistem</a>
+  <?php endif; ?>
 
   <?php if (module_active('USERS')): ?>
   <a class="menu-card" href="users.php"><span class="menu-icon">👥</span>Users</a>
@@ -242,26 +240,6 @@ $app_theme = $header_setting['theme'] ?? 'dark';
   <?php if (module_active('BACKUP')): ?>
   <a class="menu-card" href="backup_tokoapp.php" target="_blank"><span class="menu-icon">💾</span>Backup DB</a>
   <?php endif; ?>
-
-<?php elseif ($role === 'kasir'): ?>
-
-  <?php if (module_active('DASHBOARD')): ?>
-  <a class="menu-card" href="index.php"><span class="menu-icon">📊</span>Dashboard</a>
-  <?php endif; ?>
-
-  <?php if (module_active('POS_DISPLAY')): ?>
-  <a class="menu-card" href="pos_display.php" target="_blank"><span class="menu-icon">🖥️</span>POS Display</a>
-  <?php endif; ?>
-
-  <?php if (module_active('CASH_IN')): ?>
-  <a class="menu-card" href="cash_in.php"><span class="menu-icon">➕</span>Penerimaan Kas</a>
-  <?php endif; ?>
-
-  <?php if (module_active('CASH_OUT')): ?>
-  <a class="menu-card" href="cash_out.php"><span class="menu-icon">➖</span>Pengeluaran Kas</a>
-  <?php endif; ?>
-
-<?php endif; ?>
 
 </div>
 <?php endif; ?>
