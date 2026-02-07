@@ -79,6 +79,25 @@ $RPP_GROSIR = $rp_point_grosir_db ?: (($coef_grosir > 0) ? (int)round(1/$coef_gr
 }
 .toggle-unit button.active{background:#1f2937}
 .help-mini{font-size:.78rem;opacity:.8;margin-top:.2rem;display:block}
+
+/* ===== Held Transactions UI ===== */
+.held-slots{display:flex;gap:.6rem;margin-bottom:1rem;flex-wrap:wrap}
+.held-slot{
+  flex:1; min-width:140px; padding:.6rem; border-radius:10px;
+  background:#0f172a; border:1px solid #1f2937; position:relative;
+  display:flex; flex-direction:column; gap:.4rem;
+}
+.held-slot.occupied{border-color:#3b82f6; background:#0b1e3b}
+.held-slot-title{font-size:.7rem; text-transform:uppercase; letter-spacing:.5px; color:#94a3b8}
+.held-slot-info{font-size:.85rem; font-weight:600; min-height:1.2rem}
+.held-slot-btns{display:flex; gap:.35rem}
+.held-slot-btns button{
+  flex:1; padding:.3rem .5rem; font-size:.75rem; border-radius:6px; cursor:pointer;
+  border:1px solid #1f2937; background:#111827; color:#e5e7eb;
+}
+.held-slot.occupied .btn-hold{display:none}
+.held-slot:not(.occupied) .btn-resume{display:none}
+.held-slot.occupied .btn-resume{background:#1e40af; border-color:#3b82f6}
 </style>
 
 <div id="grandDisplayWrap" class="no-print">
@@ -119,6 +138,22 @@ $RPP_GROSIR = $rp_point_grosir_db ?: (($coef_grosir > 0) ? (int)round(1/$coef_gr
         </select>
       </label>
     </div>
+
+    <article>
+      <header>Transaksi Tertunda (Hold)</header>
+      <div class="held-slots">
+        <?php for($i=1; $i<=3; $i++): ?>
+          <div class="held-slot" id="slot-<?= $i ?>">
+            <div class="held-slot-title">Slot <?= $i ?></div>
+            <div class="held-slot-info" id="slot-info-<?= $i ?>">Kosong</div>
+            <div class="held-slot-btns">
+              <button type="button" class="btn-hold" onclick="holdTransaction(<?= $i ?>)">Hold</button>
+              <button type="button" class="btn-resume" onclick="resumeTransaction(<?= $i ?>)">Ambil</button>
+            </div>
+          </div>
+        <?php endfor; ?>
+      </div>
+    </article>
 
     <article>
       <header>Scan / ketik barcode lalu tekan Enter</header>
@@ -567,5 +602,127 @@ function handleSubmit(e){
   form.submit();
   return true;
 }
+
+// ==== HELD TRANSACTIONS LOGIC ====
+async function refreshHeldSlots() {
+  try {
+    const res = await fetch('/tokoapp/api/list_held_transactions.php');
+    const data = await res.json();
+    if (!data.success) return;
+
+    for (let i = 1; i <= 3; i++) {
+        const slotEl = document.getElementById(`slot-${i}`);
+        const infoEl = document.getElementById(`slot-info-${i}`);
+        const state = data.slots[i];
+
+        if (state) {
+            slotEl.classList.add('occupied');
+            const time = state.hold_time || '';
+            const itemsCount = state.cart ? state.cart.length : 0;
+            infoEl.textContent = `${itemsCount} item (${time})`;
+        } else {
+            slotEl.classList.remove('occupied');
+            infoEl.textContent = 'Kosong';
+        }
+    }
+  } catch (e) { console.error('Gagal refresh slot:', e); }
+}
+
+async function holdTransaction(slot) {
+  if (cart.length === 0) {
+    alert('Keranjang belanja masih kosong, tidak ada yang perlu ditunda.');
+    return;
+  }
+
+  const state = {
+    cart: [...cart],
+    member_kode: memberKodeEl.value,
+    shift: document.getElementById('shift').value,
+    level_harga: levelHargaSel.value,
+    discount: discountEl.value,
+    disc_mode: discMode,
+    tax: taxEl.value,
+    tax_mode: taxMode,
+    hold_time: new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})
+  };
+
+  try {
+    const res = await fetch('/tokoapp/api/hold_transaction.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slot, state })
+    });
+    const data = await res.json();
+    if (data.success) {
+      clearPOS();
+      refreshHeldSlots();
+    } else {
+      alert('Gagal menunda transaksi: ' + (data.error || 'Unknown error'));
+    }
+  } catch (e) { alert('Gagal menunda transaksi. Periksa koneksi.'); }
+}
+
+async function resumeTransaction(slot) {
+  if (cart.length > 0) {
+    if (!confirm('Peringatan: Keranjang belanja saat ini akan terhapus. Lanjutkan mengambil transaksi tunda?')) {
+      return;
+    }
+  }
+
+  try {
+    const res = await fetch(`/tokoapp/api/get_held_transaction.php?slot=${slot}`);
+    const data = await res.json();
+    if (data.success && data.state) {
+        const s = data.state;
+        
+        // Restore State
+        cart.length = 0;
+        if (s.cart) s.cart.forEach(item => cart.push(item));
+        
+        memberKodeEl.value = s.member_kode || '';
+        document.getElementById('shift').value = s.shift || '1';
+        levelHargaSel.value = s.level_harga || '1';
+        
+        discMode = s.disc_mode || 'rp';
+        discountEl.value = s.discount || 0;
+        activateDisc(discMode); // trigger UI update
+
+        taxMode = s.tax_mode || 'rp';
+        taxEl.value = s.tax || 0;
+        activateTax(taxMode); // trigger UI update
+
+        fetchMemberJenis(memberKodeEl.value); // refresh member badge
+        renderCart();
+        
+        // Hapus dari server agar slot kosong
+        await fetch('/tokoapp/api/delete_held_transaction.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ slot })
+        });
+        
+        refreshHeldSlots();
+        focusBarcode(true);
+    } else {
+      alert('Gagal mengambil transaksi: ' + (data.error || 'Data tidak ditemukan'));
+    }
+  } catch (e) { alert('Gagal mengambil transaksi. Periksa koneksi.'); }
+}
+
+function clearPOS() {
+    cart.length = 0;
+    memberKodeEl.value = '';
+    discountEl.value = 0;
+    taxEl.value = 0;
+    tunaiEl.value = 0;
+    fetchMemberJenis('');
+    renderCart();
+    focusBarcode(true);
+}
+
+// Initial refresh
+refreshHeldSlots();
+// Auto refresh every 30s
+setInterval(refreshHeldSlots, 30000);
 </script>
 <?php include __DIR__.'/includes/footer.php'; ?>

@@ -146,9 +146,18 @@ function run_app_updates(PDO $pdo) {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
     });
 
-    // 7. Tambah kolom PERMISSIONS ke tabel USERS
-    $mgr->apply('2025_03_07_add_permissions_to_users', function($pdo) {
-        $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS permissions TEXT AFTER role");
+    // 8. Buat tabel HELD_TRANSACTIONS (transaksi tunda)
+    $mgr->apply('2025_03_07_create_held_transactions_table', function($pdo) {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS held_transactions (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            slot TINYINT NOT NULL,
+            user_id INT NULL,
+            state_json LONGTEXT NOT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            KEY idx_slot (slot),
+            KEY idx_user_slot (user_id, slot)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
     });
 
     return $mgr->getLogs();
