@@ -1,3 +1,4 @@
+<?php
 // Master Modul TokoApp (Samakan dengan module_management.php)
 $MENU_MASTER = [
     'DASHBOARD'        => 'Dashboard',
