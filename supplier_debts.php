@@ -53,6 +53,11 @@ if ($selectedSup) {
 $mode = $_GET['mode'] ?? '';
 ?>
 
+<style>
+.table-actions{white-space:nowrap;display:flex;gap:.4rem;align-items:center}
+.btn-mini{padding:0.25rem 0.6rem; font-size:0.75rem; margin-bottom:0; line-height:1;}
+</style>
+
 <article>
   <header class="no-print">
     <h3>Daftar Hutang Supplier (Tagihan)</h3>
@@ -87,9 +92,9 @@ $mode = $_GET['mode'] ?? '';
               <td><?=htmlspecialchars($ds['nama'])?></td>
               <td class="right"><?=number_format($ds['total_hutang'],0,',','.')?></td>
               <td class="right"><?=htmlspecialchars($ds['invoice_count'])?></td>
-              <td style="display:flex; gap:0.4rem;">
-                <a href="?sup=<?=urlencode($ds['kode'])?>">Bayar</a>
-                <a href="?sup=<?=urlencode($ds['kode'])?>&mode=rekap" class="secondary" style="font-size:.75rem;">Rekap</a>
+              <td class="table-actions">
+                <a href="?sup=<?=urlencode($ds['kode'])?>" role="button" class="btn-mini">💸 Bayar</a>
+                <a href="?sup=<?=urlencode($ds['kode'])?>&mode=rekap" role="button" class="secondary btn-mini">📊 Rekap</a>
               </td>
             </tr>
           <?php endforeach; endif; ?>
@@ -171,9 +176,9 @@ $mode = $_GET['mode'] ?? '';
                 <h4 style="margin:0;">REKAP HUTANG SUPPLIER</h4>
                 <p style="margin:0; font-size:.9rem; color:#94a3b8;"><?= htmlspecialchars($store_name) ?></p>
             </div>
-            <div class="no-print">
-                <button onclick="window.print()" style="background:#059669; border:none;">🖨️ Cetak Rekap</button>
-                <a href="?sup=<?=urlencode($selectedSup)?>" role="button" class="secondary">Tutup</a>
+            <div class="no-print" style="display:flex; gap:0.5rem;">
+                <button onclick="window.print()" style="background:#059669; border:none; margin-bottom:0;">🖨️ Cetak Rekap</button>
+                <a href="?sup=<?=urlencode($selectedSup)?>" role="button" class="secondary" style="margin-bottom:0;">Tutup</a>
             </div>
         </div>
 
