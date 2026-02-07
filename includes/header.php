@@ -72,6 +72,54 @@ $app_theme = $header_setting['theme'] ?? 'dark';
     }
     .menu-card:hover{background:#1f2937;transform:translateY(-1px)}
     .menu-icon{width:1.05rem;text-align:center;font-size:.8rem}
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 600px) {
+      nav.topbar {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: .5rem .75rem;
+        gap: .3rem;
+      }
+      .top-right {
+        flex-wrap: wrap;
+        width: 100%;
+        justify-content: space-between;
+      }
+      .menu-wrap {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: .4rem;
+        margin: .5rem .5rem 1rem;
+      }
+      .menu-card {
+        flex-direction: column;
+        text-align: center;
+        padding: .5rem .25rem;
+        font-size: .75rem;
+        gap: .2rem;
+      }
+      .menu-icon {
+        font-size: 1.1rem;
+        margin-bottom: 2px;
+      }
+      article {
+        padding: 1rem .75rem;
+      }
+      /* Global helper: make tables scrollable on mobile */
+      table {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+    }
+
+    @media (max-width: 400px) {
+      .menu-wrap {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
   </style>
 </head>
 
