@@ -191,8 +191,20 @@ try {
             <th></th>
           </tr>
           <tr>
-            <th colspan="9" class="right">Total</th>
+            <th colspan="9" class="right">Total Tagihan</th>
             <th class="right" id="gtotal">0</th>
+            <th></th>
+          </tr>
+          <tr>
+            <th colspan="9" class="right">Bayar (Rp)</th>
+            <th class="right">
+              <input type="number" id="pay_nominal" value="0" min="0" style="width:10rem; text-align:right;">
+            </th>
+            <th></th>
+          </tr>
+          <tr>
+            <th colspan="9" class="right">Sisa Hutang</th>
+            <th class="right" id="debt_nominal" style="color:#ef4444; font-weight:bold;">0</th>
             <th></th>
           </tr>
         </tfoot>
@@ -213,6 +225,8 @@ try {
 
     <input type="hidden" name="discount" id="discount" value="0">
     <input type="hidden" name="tax" id="tax" value="0">
+    <input type="hidden" name="bayar" id="bayar" value="0">
+    <input type="hidden" name="sisa" id="sisa" value="0">
     <input type="hidden" name="payload" id="payload">
 
     <button type="submit" class="no-print" style="margin-top:1rem;">Simpan Pembelian</button>
@@ -267,10 +281,14 @@ const subtotalEl = document.getElementById('subtotal');
 const tdiscountEl = document.getElementById('tdiscount');
 const ttaxEl = document.getElementById('ttax');
 const gtotalEl = document.getElementById('gtotal');
+const payInp = document.getElementById('pay_nominal');
+const debtEl = document.getElementById('debt_nominal');
 const discountPctEl = document.getElementById('discount_pct');
 const taxPctEl = document.getElementById('tax_pct');
 const discountHidden = document.getElementById('discount');
 const taxHidden = document.getElementById('tax');
+const bayarHidden = document.getElementById('bayar');
+const sisaHidden = document.getElementById('sisa');
 const tableScrollWrap = document.querySelector('.table-scroll');
 
 function formatID(n){ return new Intl.NumberFormat('id-ID').format(n); }
@@ -329,13 +347,19 @@ function recalcFooter(subtotal){
   const taxNom = Math.floor(baseForTax * (taxPct / 100));
   const grand = subtotal - discNom + taxNom;
 
+  const payVal = parseInt(payInp?.value || '0', 10);
+  const debtVal = Math.max(0, grand - payVal);
+
   subtotalEl.textContent = formatID(subtotal);
   tdiscountEl.textContent = formatID(discNom);
   ttaxEl.textContent = formatID(taxNom);
   gtotalEl.textContent = formatID(grand);
+  debtEl.textContent = formatID(debtVal);
 
   discountHidden.value = discNom;
   taxHidden.value = taxNom;
+  bayarHidden.value = payVal;
+  sisaHidden.value = debtVal;
 }
 
 // Dipakai ketika user mengedit qty / harga beli langsung di input (tanpa renderRows)
@@ -642,6 +666,7 @@ function syncRowsFromDOM(){
 
 discountPctEl.addEventListener('input', ()=>recomputeTotalsFromDOM());
 taxPctEl.addEventListener('input', ()=>recomputeTotalsFromDOM());
+payInp.addEventListener('input', ()=>recomputeTotalsFromDOM());
 
 document.getElementById('purchaseForm').addEventListener('submit', function(e){
   e.preventDefault();
@@ -694,6 +719,8 @@ document.getElementById('purchaseForm').addEventListener('submit', function(e){
     purchase_date: document.getElementById('purchase_date').value,
     discount: parseInt(document.getElementById('discount').value || '0', 10),
     tax: parseInt(document.getElementById('tax').value || '0', 10),
+    bayar: parseInt(document.getElementById('bayar').value || '0', 10),
+    sisa: parseInt(document.getElementById('sisa').value || '0', 10),
     note: document.getElementById('note').value || '',
     items: rows.map(r => ({
       kode: r.kode,

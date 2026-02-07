@@ -139,12 +139,17 @@ if (isset($_GET['saved'])) {
   $msg = ($_GET['saved']==='deleted') ? '🗑️ Data supplier dihapus.' : '✅ Data supplier tersimpan.';
 }
 
-// ===== Ambil data list =====
 $order = ' ORDER BY ';
-if ($hasUpdated) $order .= 'updated_at DESC, ';
-if ($hasCreated) $order .= 'created_at DESC, ';
-$order .= 'kode ASC';
-$rows = $pdo->query("SELECT * FROM suppliers".$order)->fetchAll(PDO::FETCH_ASSOC);
+if ($hasUpdated) $order .= 's.updated_at DESC, ';
+if ($hasCreated) $order .= 's.created_at DESC, ';
+$order .= 's.kode ASC';
+
+$rows = $pdo->query("
+    SELECT s.*, 
+           (SELECT SUM(sisa) FROM purchases WHERE supplier_kode = s.kode AND status_lunas = 0) as total_hutang
+    FROM suppliers s
+    " . $order
+)->fetchAll(PDO::FETCH_ASSOC);
 
 // helper nilai telepon
 function telp_val(array $r): string {
@@ -207,6 +212,7 @@ require_once __DIR__.'/includes/header.php';
         <th>Nama</th>
         <th>Alamat</th>
         <th>Telepon</th>
+        <th class="right">Total Hutang</th>
         <th class="no-print">Aksi</th>
       </tr>
     </thead>
@@ -220,8 +226,14 @@ require_once __DIR__.'/includes/header.php';
             <td><?= htmlspecialchars($r['nama']) ?></td>
             <td><?= htmlspecialchars($r['alamat'] ?? '') ?></td>
             <td><?= htmlspecialchars(telp_val($r)) ?></td>
+            <td class="right" style="color:<?= $r['total_hutang'] > 0 ? '#ef4444' : 'inherit' ?>; font-weight:<?= $r['total_hutang'] > 0 ? 'bold' : 'normal' ?>">
+                <?= number_format($r['total_hutang'] ?? 0, 0, ',', '.') ?>
+            </td>
             <td class="no-print table-actions">
               <a href="suppliers.php?edit=<?= urlencode($r['kode']) ?>">Edit</a>
+              <?php if (($r['total_hutang'] ?? 0) > 0): ?>
+                <a href="supplier_debts.php?sup=<?= urlencode($r['kode']) ?>" style="color:#3b82f6">Bayar</a>
+              <?php endif; ?>
               <a href="suppliers.php?delete=<?= urlencode($r['kode']) ?>"
                  onclick="return confirm('Hapus supplier ini? Tindakan tidak dapat dibatalkan.');"
                  style="color:#dc2626">Hapus</a>

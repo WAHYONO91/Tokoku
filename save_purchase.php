@@ -53,6 +53,8 @@ $location      = ($data['location'] ?? 'gudang') === 'toko' ? 'toko' : 'gudang';
 $purchase_date = $data['purchase_date'] ?? date('Y-m-d');
 $discount      = isset($data['discount']) ? (int)$data['discount'] : 0;
 $tax           = isset($data['tax'])      ? (int)$data['tax']      : 0;
+$bayar         = isset($data['bayar'])    ? (int)$data['bayar']    : 0;
+$sisa          = isset($data['sisa'])     ? (int)$data['sisa']     : 0;
 $items         = $data['items'];
 
 $subtotal = 0;
@@ -103,6 +105,9 @@ try {
     'discount'      => ['value'=>$discount],
     'tax'           => ['value'=>$tax],
     'total'         => ['value'=>$total],
+    'bayar'         => ['value'=>$bayar],
+    'sisa'          => ['value'=>$sisa],
+    'status_lunas'  => ['value' => ($sisa <= 0 ? 1 : 0)],
     'created_by'    => ['value'=>$user],
     'created_at'    => ['value'=>'NOW()', 'expr'=>true],
   ]);

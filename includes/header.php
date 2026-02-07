@@ -211,6 +211,12 @@ $app_theme = $header_setting['theme'] ?? 'dark';
 </a>
 <?php endif; ?>
 
+<?php if (module_active('TAGIHAN_SUPPLIER')): ?>
+<a class="menu-card" href="supplier_debts.php">
+  <span class="menu-icon">🚚💸</span><span>Tagihan Supplier</span>
+</a>
+<?php endif; ?>
+
 
   <?php if (module_active('SETTINGS')): ?>
   <a class="menu-card" href="settings.php"><span class="menu-icon">⚙️</span>Pengaturan</a>

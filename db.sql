@@ -48,9 +48,11 @@ CREATE TABLE IF NOT EXISTS members (
 -- Master supplier
 CREATE TABLE IF NOT EXISTS suppliers (
   id INT AUTO_INCREMENT PRIMARY KEY,
+  kode VARCHAR(50) UNIQUE,
   nama VARCHAR(255) NOT NULL,
   alamat TEXT,
   tlp VARCHAR(50),
+  hutang_awal BIGINT DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -112,9 +114,13 @@ CREATE TABLE IF NOT EXISTS purchases (
   tanggal DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   user_id INT NOT NULL,
   supplier_id INT NULL,
+  supplier_kode VARCHAR(50),
   location ENUM('gudang','toko') NOT NULL DEFAULT 'gudang',
   subtotal BIGINT NOT NULL DEFAULT 0,
   total BIGINT NOT NULL DEFAULT 0,
+  bayar BIGINT DEFAULT 0,
+  sisa BIGINT DEFAULT 0,
+  status_lunas TINYINT(1) DEFAULT 1,
   FOREIGN KEY (user_id) REFERENCES users(id),
   FOREIGN KEY (supplier_id) REFERENCES suppliers(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -224,3 +230,17 @@ CREATE TABLE IF NOT EXISTS modules (
     module_name VARCHAR(100),
     is_active TINYINT(1) DEFAULT 1
 );
+
+-- ========== SUPPLIER PAYMENTS ==========
+CREATE TABLE IF NOT EXISTS supplier_payments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    tanggal DATETIME DEFAULT CURRENT_TIMESTAMP,
+    supplier_kode VARCHAR(50) NOT NULL,
+    purchase_id BIGINT DEFAULT NULL,
+    jumlah BIGINT NOT NULL DEFAULT 0,
+    metode VARCHAR(50) DEFAULT 'Tunai',
+    keterangan TEXT,
+    created_by VARCHAR(50),
+    INDEX (supplier_kode),
+    INDEX (purchase_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

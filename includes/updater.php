@@ -44,6 +44,32 @@ class MigrationManager {
         }
     }
 
+    public function runGitPull() {
+        $this->log[] = "INFO: Attempting to pull latest code from GitHub...";
+        
+        // Cek apakah git terinstall
+        $check = shell_exec("git --version");
+        if (!$check) {
+            $this->log[] = "ERROR: Git tidak ditemukan di PATH sistem. Update kode gagal.";
+            return false;
+        }
+
+        // Jalankan git pull
+        // Kita gunakan origin main sesuai info sebelumnya
+        $output = shell_exec("git pull origin main 2>&1");
+        if ($output) {
+            $this->log[] = "GIT OUTPUT: " . trim($output);
+            if (strpos($output, 'Updating') !== false || strpos($output, 'Already up to date') !== false) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+        
+        $this->log[] = "ERROR: Tidak ada output dari perintah git pull.";
+        return false;
+    }
+
     public function getLogs() {
         return $this->log;
     }
@@ -85,6 +111,39 @@ function run_app_updates(PDO $pdo) {
             INDEX (item_kode),
             INDEX (created_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    });
+
+    // 4. Update tabel SUPPLIERS (tambah kode jika kolom id yang ada, atau sebaliknya)
+    $mgr->apply('2025_03_07_sync_supplier_columns', function($pdo) {
+        // Kita pastikan ada kolom kode dan hutang_awal
+        $pdo->exec("ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS kode VARCHAR(50) AFTER id");
+        $pdo->exec("ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS hutang_awal BIGINT DEFAULT 0 AFTER tlp");
+        // Update kode = id jika kode masih kosong
+        $pdo->exec("UPDATE suppliers SET kode = id WHERE kode IS NULL OR kode = ''");
+    });
+
+    // 5. Update tabel PURCHASES (tambah bayar, sisa, supplier_kode)
+    $mgr->apply('2025_03_07_add_debt_cols_to_purchases', function($pdo) {
+        $pdo->exec("ALTER TABLE purchases ADD COLUMN IF NOT EXISTS supplier_kode VARCHAR(50) AFTER supplier_id");
+        $pdo->exec("ALTER TABLE purchases ADD COLUMN IF NOT EXISTS bayar BIGINT DEFAULT 0 AFTER total");
+        $pdo->exec("ALTER TABLE purchases ADD COLUMN IF NOT EXISTS sisa BIGINT DEFAULT 0 AFTER bayar");
+        $pdo->exec("ALTER TABLE purchases ADD COLUMN IF NOT EXISTS status_lunas TINYINT(1) DEFAULT 1 AFTER sisa");
+    });
+
+    // 6. Buat tabel SUPPLIER_PAYMENTS
+    $mgr->apply('2025_03_07_create_supplier_payments_table', function($pdo) {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS supplier_payments (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            tanggal DATETIME DEFAULT CURRENT_TIMESTAMP,
+            supplier_kode VARCHAR(50) NOT NULL,
+            purchase_id BIGINT DEFAULT NULL,
+            jumlah BIGINT NOT NULL DEFAULT 0,
+            metode VARCHAR(50) DEFAULT 'Tunai',
+            keterangan TEXT,
+            created_by VARCHAR(50),
+            INDEX (supplier_kode),
+            INDEX (purchase_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
     });
 
     return $mgr->getLogs();

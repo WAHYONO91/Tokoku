@@ -37,6 +37,7 @@ $menuMaster = [
 
     // 🔽 MODUL BARU
     'TAGIHAN_MEMBER'   => 'Tagihan Member',
+    'TAGIHAN_SUPPLIER' => 'Tagihan Supplier',
 
     'SETTINGS'         => 'Pengaturan',
     'USERS'            => 'Users',

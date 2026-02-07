@@ -5,8 +5,16 @@ require_role(['admin']);
 require_once __DIR__ . '/includes/updater.php';
 
 $logs = [];
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_update'])) {
-    $logs = run_app_updates($pdo);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $mgr = new MigrationManager($pdo);
+    if (isset($_POST['run_db_update'])) {
+        $logs = run_app_updates($pdo);
+    } elseif (isset($_POST['run_code_update'])) {
+        $mgr->runGitPull();
+        // Setelah pull kode, jalankan juga update DB otomatis karena file updater.php mungkin berubah
+        run_app_updates($pdo);
+        $logs = $mgr->getLogs();
+    }
 }
 
 require_once __DIR__ . '/includes/header.php';
@@ -21,9 +29,18 @@ require_once __DIR__ . '/includes/header.php';
   </header>
 
   <section>
-    <form method="post">
-      <p>Penting: Sangat disarankan untuk mem-backup database sebelum melakukan pembaruan besar.</p>
-      <button type="submit" name="run_update" class="contrast">Jalankan Pembaruan Sekarang</button>
+    <form method="post" style="display:flex; gap:1rem; flex-wrap:wrap;">
+      <div style="flex:1; min-width:300px; border:1px solid #1e293b; padding:1rem; border-radius:0.5rem;">
+        <h6>1. Update Kode (GitHub)</h6>
+        <p><small>Menarik file terbaru dari repositori GitHub.</small></p>
+        <button type="submit" name="run_code_update" class="contrast">Tarik Kode Terbaru</button>
+      </div>
+
+      <div style="flex:1; min-width:300px; border:1px solid #1e293b; padding:1rem; border-radius:0.5rem;">
+        <h6>2. Update Database</h6>
+        <p><small>Menyesuaikan skema tabel dengan fitur terbaru.</small></p>
+        <button type="submit" name="run_db_update" class="secondary">Jalankan Migrasi DB</button>
+      </div>
     </form>
   </section>
 
