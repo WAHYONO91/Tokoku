@@ -13,7 +13,11 @@ CREATE TABLE IF NOT EXISTS users (
 -- Settings (e.g., point rate: berapa Rupiah per 1 poin)
 CREATE TABLE IF NOT EXISTS settings (
   id INT PRIMARY KEY,
-  points_per_rupiah DECIMAL(18,8) NOT NULL DEFAULT 0.0001  -- contoh: 1 poin per Rp10.000 -> 0.0001
+  store_name VARCHAR(100),
+  store_address TEXT,
+  store_phone VARCHAR(20),
+  theme VARCHAR(20) DEFAULT 'dark',
+  points_per_rupiah DECIMAL(18,8) NOT NULL DEFAULT 0.0001
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT INTO settings (id, points_per_rupiah) VALUES (1, 0.0001) ON DUPLICATE KEY UPDATE points_per_rupiah=values(points_per_rupiah);
@@ -179,13 +183,44 @@ CREATE TABLE IF NOT EXISTS sales_return_items (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
-CREATE TABLE held_transactions (
+CREATE TABLE IF NOT EXISTS held_transactions (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  slot TINYINT NOT NULL,           -- 1, 2, 3 (Tunda 1/2/3)
-  user_id INT NULL,                -- opsional: id user/kasir
-  state_json LONGTEXT NOT NULL,    -- isi transaksi dalam bentuk JSON
+  slot TINYINT NOT NULL,
+  user_id INT NULL,
+  state_json LONGTEXT NOT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   KEY idx_slot (slot),
   KEY idx_user_slot (user_id, slot)
+);
+
+-- ========== AUDIT LOGS ==========
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  username VARCHAR(50) NOT NULL,
+  action VARCHAR(50) NOT NULL,
+  description TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ========== UPDATED STOCK MUTATIONS LOG ==========
+CREATE TABLE IF NOT EXISTS stock_mutations (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  item_kode VARCHAR(64) NOT NULL,
+  from_loc  VARCHAR(32) NOT NULL,
+  to_loc    VARCHAR(32) NOT NULL,
+  qty       INT NOT NULL DEFAULT 0,
+  created_by VARCHAR(64) DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX (item_kode),
+  INDEX (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ========== MODULES ==========
+CREATE TABLE IF NOT EXISTS modules (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    module_code VARCHAR(50) UNIQUE,
+    module_name VARCHAR(100),
+    is_active TINYINT(1) DEFAULT 1
 );
