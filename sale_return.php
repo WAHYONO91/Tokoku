@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__.'/config.php';
-require_login();
-require_role(['admin','kasir']);
+require_access('RETURNS');
 require_once __DIR__.'/functions.php';
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;

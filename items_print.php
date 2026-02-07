@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__.'/config.php';
-require_login();
-require_role(['admin']);
+require_access('INVENTORY');
 
 // Filter: cetak satu kode atau semua
 $single = $_GET['single'] ?? '';

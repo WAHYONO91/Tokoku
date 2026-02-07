@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__.'/config.php';
-require_login();
-require_role(['admin','kasir']);
+require_access('PURCHASE');
 require_once __DIR__.'/functions.php';
 
 /* ========= Utilities: cek kolom & insert dinamis ========= */

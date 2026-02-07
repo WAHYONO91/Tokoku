@@ -2,8 +2,7 @@
 // /tokoapp/api/hold_transaction.php
 require_once __DIR__.'/../config.php';
 require_once __DIR__.'/../functions.php';
-require_login();
-require_role(['admin','kasir']);
+require_access('DASHBOARD');
 
 header('Content-Type: application/json');
 

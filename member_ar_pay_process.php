@@ -2,8 +2,7 @@
 require_once __DIR__.'/config.php';
 require_once __DIR__.'/functions.php';
 
-require_login();
-require_role(['admin','kasir']);
+require_access('PIUTANG');
 
 $id  = (int)($_POST['id'] ?? 0);
 $amt = (float)($_POST['amount'] ?? 0);

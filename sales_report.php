@@ -2,8 +2,7 @@
 // /tokoapp/sales_report.php — Laporan Penjualan (OK/RETUR/BATAL/SEMUA) + Aksi Edit (Admin saja)
 
 require_once __DIR__.'/config.php';
-require_login();
-require_role(['admin','kasir']);
+require_access('REPORT_SALES');
 require_once __DIR__.'/includes/header.php';
 
 // Helper rupiah (hindari redeclare)

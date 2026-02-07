@@ -2,8 +2,7 @@
 // /tokoapp/ar_pay.php — Handler pelunasan Piutang Sales
 require_once __DIR__.'/config.php';
 require_once __DIR__.'/functions.php';
-require_login();
-require_role(['admin','kasir']);
+require_access('PIUTANG');
 
 // Pastikan tidak ada output sebelum header
 if (session_status() === PHP_SESSION_NONE) { session_start(); }

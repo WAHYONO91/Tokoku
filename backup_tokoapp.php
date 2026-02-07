@@ -13,8 +13,7 @@
  */
 
 require_once __DIR__ . '/config.php';
-if (function_exists('require_login')) { require_login(); }
-if (function_exists('require_role'))  { require_role(['admin']); }
+require_access('BACKUP');
 
 if (!isset($pdo) || !($pdo instanceof PDO)) {
   http_response_code(500);

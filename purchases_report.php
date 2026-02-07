@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__.'/config.php';
-require_login();
-require_role(['admin']);
+require_access('REPORT_PURCHASE');
 require_once __DIR__.'/includes/header.php';
 
 $from = $_GET['from'] ?? date('Y-m-01');

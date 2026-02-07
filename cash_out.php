@@ -2,8 +2,7 @@
 // /tokoapp/cash_out.php
 require_once __DIR__.'/config.php';
 require_once __DIR__.'/functions.php';
-require_login();
-require_role(['admin','kasir']); // admin & kasir bisa akses
+require_access('CASH_OUT');
 
 $user_id  = $_SESSION['user']['id'] ?? null;
 $today    = date('Y-m-d');

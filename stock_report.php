@@ -1,8 +1,7 @@
 <?php
 require_once __DIR__.'/config.php';
 require_once __DIR__.'/functions.php';
-require_login();
-$role = $_SESSION['user']['role'] ?? '';
+require_access('REPORT_STOCK');
 
 /* ======================
    Helper: cek tabel & kolom (cache)

@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__.'/config.php';
-require_login();
-require_role(['admin','kasir']);
+require_access('REDEEM');
 
 $kode = $_POST['kode'] ?? '';
 $redeem_points = (int)($_POST['redeem_points'] ?? 0);

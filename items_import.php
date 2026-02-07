@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__.'/config.php';
-require_login();
-require_role(['admin']);
+require_access('INVENTORY');
 require_once __DIR__.'/functions.php'; // untuk ensure_stock_rows
 
 // =================== UNDUH CONTOH CSV (HARUS SEBELUM OUTPUT APAPUN) ===================

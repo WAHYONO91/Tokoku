@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__.'/config.php';
-require_login();
-require_role(['admin']);
+require_access('SUPPLIER');
 
 // ===== Helper: cek apakah kolom ada =====
 function table_has_column(PDO $pdo, string $table, string $column): bool {

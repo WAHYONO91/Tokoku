@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__.'/config.php';
-require_login();
-require_role(['admin']);
+require_access('SETTINGS');
 
 // Ambil data pengaturan toko
 $setting = $pdo->query("SELECT * FROM settings WHERE id=1")->fetch(PDO::FETCH_ASSOC) ?: [];

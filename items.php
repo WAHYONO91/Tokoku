@@ -1,24 +1,26 @@
 <?php
 require_once __DIR__ . '/config.php';
-require_login(); // semua user login boleh akses
+require_once __DIR__ . '/functions.php';
+require_access('INVENTORY');
 
-// ========================= MODE PICKER (POPUP) =========================
-$isPicker = (isset($_GET['pick']) && $_GET['pick'] == '1');
+$isPicker   = isset($_GET['pick']);
+$msg        = '';
+$err        = '';
+$q          = trim($_GET['q'] ?? '');
+$limitParam = $_GET['limit'] ?? '100';
 
 require_once __DIR__ . '/includes/header.php';
 
 $currentRole = $_SESSION['user']['role'] ?? '';
 $isAdmin     = ($currentRole === 'admin');
-
-$msg = '';
-$err = '';
+$canCRUD     = module_active('INVENTORY');
 
 // ========================= HAPUS (HANYA ADMIN) =========================
 // NOTE: di mode picker, kita kunci CRUD agar tidak ada salah klik saat popup.
 if (!$isPicker && isset($_GET['delete'])) {
-  if (!$isAdmin) {
+  if (!$canCRUD) {
     http_response_code(403);
-    $err = 'Akses ditolak: hanya admin yang boleh menghapus data barang.';
+    $err = 'Akses ditolak: Anda tidak memiliki izin untuk menghapus data barang.';
   } else {
     $delKode = trim($_GET['delete']);
     if ($delKode !== '') {
@@ -198,8 +200,6 @@ foreach ($suppliers as $s) {
 }
 
 // Filter cari & limit tampilan
-$q = trim($_GET['q'] ?? '');
-$limitParam = $_GET['limit'] ?? '100';
 $limitMap = [
   '100'  => 100,
   '200'  => 200,
@@ -494,7 +494,7 @@ table td .btn-print-barcode {
             <?php if (!$isPicker): ?>
             <td class="no-print table-actions">
               <a href="items.php?edit=<?= urlencode($kodeRow) ?>">Edit</a>
-              <?php if ($isAdmin): ?>
+              <?php if ($canCRUD): ?>
                 <a href="items.php?delete=<?= urlencode($kodeRow) ?>"
                    onclick="return confirm('Hapus barang ini? Tindakan tidak dapat dibatalkan.');"
                    style="color:#dc2626">Hapus</a>

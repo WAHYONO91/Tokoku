@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__.'/config.php';
-require_login();
-require_role(['admin','kasir']);
+require_access('STOCK');
 
 require_once __DIR__.'/includes/header.php';
 require_once __DIR__.'/functions.php';

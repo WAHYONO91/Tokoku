@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__.'/config.php';
-require_login();
-require_role(['admin','kasir']); // kasir boleh tukar poin
+require_access('REDEEM');
 require_once __DIR__.'/includes/header.php';
 
 $kode = $_GET['kode'] ?? '';

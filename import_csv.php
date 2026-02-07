@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__.'/includes/header.php';
-require_login();
-require_role(['admin']);
+require_access('INVENTORY');
 
 if($_SERVER['REQUEST_METHOD']==='POST' && isset($_FILES['csv'])){
   $loc = $_POST['location'] ?? '';

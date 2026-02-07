@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__.'/includes/header.php';
-require_login();
-require_role(['admin']);
+require_access('RETURNS');
 // Kasir & admin boleh retur
 // Step 1: input sale_id
 if($_SERVER['REQUEST_METHOD']!=='POST'){

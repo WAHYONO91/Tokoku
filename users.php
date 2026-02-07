@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__ . '/config.php';
-require_login();
-require_role(['admin']);
+require_access('USERS');
 require_once __DIR__ . '/includes/header.php';
 
 // Pastikan daftar modul di database up-to-date dengan MASTER

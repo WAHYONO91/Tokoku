@@ -2,8 +2,7 @@
 // /tokoapp/cashier_cash.php (Versi UI Rapi)
 require_once __DIR__.'/config.php';
 require_once __DIR__.'/functions.php';
-require_login();
-require_role(['admin','kasir']); // akses halaman
+require_access('CASHIER');
 
 $user_id   = $_SESSION['user']['id']   ?? null;
 $user_role = $_SESSION['user']['role'] ?? null;

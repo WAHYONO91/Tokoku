@@ -2,8 +2,7 @@
 // /tokoapp/sales_ar_list.php — Daftar Piutang Sales + Pelunasan Cepat
 
 require_once __DIR__.'/config.php';
-require_login();
-require_role(['admin','kasir']);
+require_access('PIUTANG');
 require_once __DIR__.'/includes/header.php';
 
 // ====== Filter ======

@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__.'/config.php';
-require_login();
-require_role(['admin']);
+require_access('TAGIHAN_SUPPLIER');
 require_once __DIR__.'/functions.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

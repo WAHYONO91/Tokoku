@@ -5,8 +5,7 @@
 require_once __DIR__.'/config.php';
 require_once __DIR__.'/functions.php';
 
-require_login();
-require_role(['admin']); // edit transaksi: admin only (ubah kalau perlu)
+require_access('REPORT_SALES');
 
 // =======================
 // Ambil setting toko + poin

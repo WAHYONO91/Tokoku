@@ -27,6 +27,26 @@ function require_role($roles = []) {
   }
 }
 
+/**
+ * Require specific module access
+ */
+function require_access(string $moduleCode) {
+  if (!is_logged_in()) {
+    header('Location: /tokoapp/auth/login.php');
+    exit;
+  }
+
+  if (!module_active($moduleCode)) {
+    http_response_code(403);
+    echo "<div style='padding:2rem; text-align:center;'>
+            <h3>Akses Ditolak</h3>
+            <p>Anda tidak memiliki izin untuk mengakses modul <strong>$moduleCode</strong>.</p>
+            <a href='/tokoapp/index.php'>Kembali ke Dashboard</a>
+          </div>";
+    exit;
+  }
+}
+
 // =====================
 // FORMAT & SETTINGS
 // =====================

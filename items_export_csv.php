@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__.'/config.php';
-require_login();
-require_role(['admin']);
+require_access('INVENTORY');
 
 header('Content-Type: text/csv; charset=utf-8');
 header('Content-Disposition: attachment; filename=items.csv');
