@@ -73,13 +73,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id    = (int)($_POST['id'] ?? 0);
         $u     = trim($_POST['username'] ?? '');
         $role  = $_POST['role'] ?? 'kasir';
+        $perms = isset($_POST['permissions']) ? json_encode($_POST['permissions']) : '[]';
 
         if ($id <= 0 || $u === '') {
             $err = 'ID user dan username wajib diisi.';
         } else {
             try {
-                $stmt = $pdo->prepare("UPDATE users SET username=?, role=? WHERE id=?");
-                $stmt->execute([$u, $role, $id]);
+                $stmt = $pdo->prepare("UPDATE users SET username=?, role=?, permissions=? WHERE id=?");
+                $stmt->execute([$u, $role, $perms, $id]);
                 $msg = 'Data user berhasil diperbarui.';
             } catch (Throwable $e) {
                 $err = 'Gagal mengedit user: ' . $e->getMessage();
@@ -111,10 +112,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $rows = $pdo->query("
-    SELECT id, username, role, is_active, created_at
+    SELECT id, username, role, permissions, is_active, created_at
     FROM users
     ORDER BY id DESC
 ")->fetchAll();
+
+// Ambil daftar modul untuk checkbox
+$allModules = $pdo->query("SELECT module_code, module_name FROM modules ORDER BY module_name ASC")->fetchAll();
 ?>
 
 <style>
@@ -263,6 +267,28 @@ $rows = $pdo->query("
   font-size:.78rem;
   padding:.28rem .45rem;
 }
+.perm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 0.3rem;
+  margin: 0.5rem 0;
+  border: 1px solid #374151;
+  padding: 0.5rem;
+  border-radius: 0.4rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.perm-item {
+  font-size: 0.7rem;
+  display: flex !important;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 0 !important;
+}
+.perm-item input {
+  margin-bottom: 0 !important;
+  width: auto !important;
+}
 </style>
 
 <article class="user-page">
@@ -367,6 +393,19 @@ $rows = $pdo->query("
                         <option value="admin" <?= $r['role']==='admin'?'selected':''; ?>>Admin</option>
                       </select>
                     </label>
+                    <label style="font-size:0.75rem; font-weight:bold; margin-top:0.5rem;">Hak Akses Modul (Kasir Only):</label>
+                    <div class="perm-grid">
+                      <?php 
+                        $userPerms = json_decode($r['permissions'] ?? '[]', true);
+                        foreach ($allModules as $m): 
+                      ?>
+                        <label class="perm-item">
+                          <input type="checkbox" name="permissions[]" value="<?= htmlspecialchars($m['module_code']) ?>"
+                                 <?= in_array($m['module_code'], $userPerms) ? 'checked' : '' ?>>
+                          <?= htmlspecialchars($m['module_name']) ?>
+                        </label>
+                      <?php endforeach; ?>
+                    </div>
                     <button type="submit" class="user-btn">Simpan Perubahan</button>
                   </form>
                 </details>

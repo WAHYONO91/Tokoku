@@ -146,5 +146,10 @@ function run_app_updates(PDO $pdo) {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
     });
 
+    // 7. Tambah kolom PERMISSIONS ke tabel USERS
+    $mgr->apply('2025_03_07_add_permissions_to_users', function($pdo) {
+        $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS permissions TEXT AFTER role");
+    });
+
     return $mgr->getLogs();
 }

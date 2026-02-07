@@ -144,12 +144,23 @@ if ($hasUpdated) $order .= 's.updated_at DESC, ';
 if ($hasCreated) $order .= 's.created_at DESC, ';
 $order .= 's.kode ASC';
 
-$rows = $pdo->query("
-    SELECT s.*, 
-           (SELECT SUM(sisa) FROM purchases WHERE supplier_kode = s.kode AND status_lunas = 0) as total_hutang
-    FROM suppliers s
-    " . $order
-)->fetchAll(PDO::FETCH_ASSOC);
+// Cek apakah kolom sisa sudah ada di tabel purchases (agar tidak error jika belum update)
+$hasSisa = false;
+try {
+    $stCheck = $pdo->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'purchases' AND COLUMN_NAME = 'sisa'");
+    $stCheck->execute();
+    $hasSisa = ((int)$stCheck->fetchColumn() > 0);
+} catch (Throwable $e) { $hasSisa = false; }
+
+$sql = "SELECT s.*, ";
+if ($hasSisa) {
+    $sql .= "(SELECT SUM(sisa) FROM purchases WHERE supplier_kode = s.kode AND status_lunas = 0) as total_hutang ";
+} else {
+    $sql .= "0 as total_hutang ";
+}
+$sql .= "FROM suppliers s " . $order;
+
+$rows = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
 
 // helper nilai telepon
 function telp_val(array $r): string {
