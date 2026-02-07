@@ -8,6 +8,16 @@ $setting = $pdo->query("SELECT * FROM settings WHERE id=1")->fetch(PDO::FETCH_AS
 $msg = '';
 $logo_error = '';
 
+// --- MIGRASI OTOMATIS: tambah kolom theme jika belum ada ---
+try {
+  $pdo->exec("ALTER TABLE settings ADD COLUMN IF NOT EXISTS theme VARCHAR(20) DEFAULT 'dark'");
+} catch (PDOException $e) {}
+
+// Refresh data setelah migrasi
+if (empty($setting)) {
+    $setting = $pdo->query("SELECT * FROM settings WHERE id=1")->fetch(PDO::FETCH_ASSOC) ?: [];
+}
+
 // helper ambil POST atau default lama
 function old_or($key, $default) {
   return array_key_exists($key, $_POST) ? $_POST[$key] : $default;
@@ -98,6 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $footer_note     = old_or('footer_note', $setting['footer_note'] ?? '');
   $invoice_prefix  = old_or('invoice_prefix', $setting['invoice_prefix'] ?? 'INV/');
   $qr_provider_url = old_or('qr_provider_url', $setting['qr_provider_url'] ?? 'https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=');
+  $theme           = old_or('theme', $setting['theme'] ?? 'dark');
 
   // Poin
   $points_per_rupiah_umum   = (float)old_or('points_per_rupiah_umum',   $points_per_rupiah_umum);
@@ -216,7 +227,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
              print_show_footer              = ?,
              print_store_name_font_size_px  = ?,
              print_store_name_bold          = ?,
-             print_store_name_align         = ?
+             print_store_name_align         = ?,
+             theme                          = ?
        WHERE id=1
     ");
     $stmt->execute([
@@ -253,7 +265,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $store_name_font_size,
       $store_name_bold,
       $store_name_align,
+      $theme
     ]);
+    log_activity($pdo, 'UPDATE_SETTINGS', "Mengubah pengaturan toko (Nama: $store_name)");
     $msg = 'Pengaturan disimpan.';
   } catch (PDOException $e1) {
     $msg = 'Gagal menyimpan pengaturan: ' . $e1->getMessage();
@@ -302,6 +316,14 @@ require_once __DIR__.'/includes/header.php';
       Logo (upload file lokal)
       <input type="file" name="logo_file" accept=".png,.jpg,.jpeg,.gif,.webp">
       <small>Biarkan kosong jika tidak mengganti logo.</small>
+    </label>
+
+    <label>
+      Tema Aplikasi
+      <select name="theme">
+        <option value="dark" <?= ($setting['theme'] ?? 'dark') === 'dark' ? 'selected' : '' ?>>Dark (Gelap)</option>
+        <option value="light" <?= ($setting['theme'] ?? 'dark') === 'light' ? 'selected' : '' ?>>Light (Terang)</option>
+      </select>
     </label>
 
     <?php if (!empty($setting['logo_url'])): ?>

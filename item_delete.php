@@ -9,6 +9,7 @@ if($kode===''){
   exit;
 }
 
+log_activity($pdo, 'DELETE_ITEM', "Menghapus item dengan kode: $kode");
 $stmt = $pdo->prepare("DELETE FROM items WHERE kode=?");
 $stmt->execute([$kode]);
 // stok tidak dihapus biar history aman

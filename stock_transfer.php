@@ -7,21 +7,8 @@ require_once __DIR__.'/includes/header.php';
 require_once __DIR__.'/functions.php';
 
 // ---------------------------------------------------------
-// Pastikan tabel log mutasi ada
+// Log mutasi (tabel dipastikan ada via updater)
 // ---------------------------------------------------------
-$pdo->exec("
-  CREATE TABLE IF NOT EXISTS stock_mutations (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    item_kode VARCHAR(64) NOT NULL,
-    from_loc  VARCHAR(32) NOT NULL,
-    to_loc    VARCHAR(32) NOT NULL,
-    qty       INT NOT NULL DEFAULT 0,
-    created_by VARCHAR(64) DEFAULT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    INDEX (item_kode),
-    INDEX (created_at)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-");
 
 $msg = '';
 
@@ -97,7 +84,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['__action']) && $_POST
           }
 
           $pdo->commit();
-          $msg = 'Mutasi batch berhasil: '.count($batch).' barang.';
+          $itemCount = count($batch);
+          log_activity($pdo, 'STOCK_TRANSFER', "Mutasi batch $itemCount barang dari $from ke $to");
+          $msg = 'Mutasi batch berhasil: '.$itemCount.' barang.';
         } catch (Throwable $th) {
           if ($pdo->inTransaction()) $pdo->rollBack();
           $msg = 'Gagal mutasi batch: '.$th->getMessage();

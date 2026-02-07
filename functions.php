@@ -130,3 +130,20 @@ function get_members(PDO $pdo, string $q = '', int $limit = 500): array {
 }
 // ===== Modul Manajemen (Feature Toggle) =====
 require_once __DIR__ . '/includes/module_helper.php';
+
+/**
+ * Log activity to audit_logs table
+ */
+function log_activity(PDO $pdo, string $action, string $description): void {
+  if (!isset($_SESSION['user'])) return;
+  
+  $user_id = $_SESSION['user']['id'] ?? 0;
+  $username = $_SESSION['user']['username'] ?? 'unknown';
+  
+  try {
+    $stmt = $pdo->prepare("INSERT INTO audit_logs (user_id, username, action, description) VALUES (?, ?, ?, ?)");
+    $stmt->execute([$user_id, $username, $action, $description]);
+  } catch (PDOException $e) {
+    // Ignored here, handled by centralized updater
+  }
+}

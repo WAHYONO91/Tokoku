@@ -31,6 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'username' => $user['username'],
             'role'     => $user['role']
         ];
+        log_activity($pdo, 'LOGIN', 'User berhasil login ke sistem.');
         // setelah login masuk ke dashboard utama
         header('Location: /tokoapp/index.php');
         exit;

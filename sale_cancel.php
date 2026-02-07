@@ -39,6 +39,8 @@ try {
   $upd = $pdo->prepare("UPDATE sales SET status='CANCEL' WHERE id=?");
   $upd->execute([$id]);
 
+  log_activity($pdo, 'CANCEL_SALE', "Membatalkan transaksi ID: $id (Member: " . ($sale['member_kode'] ?? 'Umum') . ")");
+
   $pdo->commit();
 } catch (Exception $e) {
   if ($pdo->inTransaction()) $pdo->rollBack();

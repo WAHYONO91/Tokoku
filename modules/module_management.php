@@ -33,12 +33,14 @@ $menuMaster = [
     'CASH_OUT'         => 'Pengeluaran Kas',
     'CASHIER'          => 'Kas Kasir',
     'PIUTANG'          => 'Piutang Member',
+    'RETURNS'          => 'Retur Barang',
 
     // 🔽 MODUL BARU
     'TAGIHAN_MEMBER'   => 'Tagihan Member',
 
     'SETTINGS'         => 'Pengaturan',
     'USERS'            => 'Users',
+    'AUDIT_TRAIL'      => 'Audit Trail',
     'BACKUP'           => 'Backup Database',
     'MODULE_MGMT'      => 'Manajemen Modul',
 ];

@@ -10,13 +10,22 @@ require_once __DIR__ . '/../config.php';
 // ===== Auth =====
 $logged_in = isset($_SESSION['user']);
 $role      = $logged_in ? ($_SESSION['user']['role'] ?? null) : null;
+// ===== Fetch Store Settings for Header =====
+try {
+    $header_setting = $pdo->query("SELECT store_name, theme FROM settings WHERE id=1")->fetch(PDO::FETCH_ASSOC) ?: [];
+} catch (PDOException $e) {
+    // Fallsback if table/columns don't exist yet
+    $header_setting = ['store_name' => 'TokoAPP', 'theme' => 'dark'];
+}
+$store_name = $header_setting['store_name'] ?? 'TokoAPP';
+$app_theme = $header_setting['theme'] ?? 'dark';
 ?>
 <!doctype html>
-<html lang="id" data-theme="dark">
+<html lang="id" data-theme="<?= htmlspecialchars($app_theme) ?>">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>TokoAPP</title>
+  <title><?= htmlspecialchars($store_name) ?></title>
 
   <link rel="icon" type="image/png" href="uploads/logo.jpg">
 
@@ -29,14 +38,23 @@ $role      = $logged_in ? ($_SESSION['user']['role'] ?? null) : null;
 
   <style>
     :root {
-      --pico-background-color:#0f172a;
-      --pico-card-background-color:#111827;
       --pico-font-size:18px;
     }
-    html{font-size:18px}
+    <?php if ($app_theme === 'dark'): ?>
+    :root {
+      --pico-background-color:#0f172a;
+      --pico-card-background-color:#111827;
+    }
     body{background:#0f172a;color:#e2e8f0;line-height:1.4}
+    nav.topbar{background:#020617;border-bottom:1px solid #1f2937;}
+    <?php else: ?>
+    body{line-height:1.4}
+    nav.topbar{background:#f8fafc;border-bottom:1px solid #e2e8f0; color: #1e293b}
+    .top-right{color:#64748b !important}
+    <?php endif; ?>
+
+    html{font-size:18px}
     nav.topbar{
-      background:#020617;border-bottom:1px solid #1f2937;
       padding:.35rem .9rem;display:flex;justify-content:space-between;align-items:center
     }
     .brand{font-weight:600;font-size:.9rem}
@@ -61,7 +79,7 @@ $role      = $logged_in ? ($_SESSION['user']['role'] ?? null) : null;
 
 <!-- ===== TOP BAR ===== -->
 <nav class="topbar">
-  <div class="brand">Pelangi | Mart (Belanja Mudah Harga Bersahabat)</div>
+  <div class="brand"><?= htmlspecialchars($store_name) ?></div>
   <div class="top-right">
     <span id="dateNow"></span>
     <span class="clock-badge">🕒 <span id="clockNow">--:--:--</span></span>
@@ -156,9 +174,15 @@ $role      = $logged_in ? ($_SESSION['user']['role'] ?? null) : null;
 </a>
 <?php endif; ?>
 
+<a class="menu-card" href="admin_update.php"><span class="menu-icon">🚀</span>Update Sistem</a>
+
 
   <?php if (module_active('USERS')): ?>
   <a class="menu-card" href="users.php"><span class="menu-icon">👥</span>Users</a>
+  <?php endif; ?>
+
+  <?php if (module_active('AUDIT_TRAIL')): ?>
+  <a class="menu-card" href="audit_trail.php"><span class="menu-icon">📜</span>Audit Trail</a>
   <?php endif; ?>
 
   <?php if (module_active('BACKUP')): ?>
