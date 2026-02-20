@@ -184,6 +184,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $dest = $uploadDir . '/' . $newName;
       if (move_uploaded_file($tmp, $dest)) {
         $logo_url = '/tokoapp/uploads/'.$newName;
+
+        // --- Generate PWA Icons (192x192 and 512x512) ---
+        function resize_and_save_pwa_icon($sourcePath, $destPath, $size) {
+            $ext = strtolower(pathinfo($sourcePath, PATHINFO_EXTENSION));
+            $sourceImage = null;
+            if ($ext === 'png') $sourceImage = @imagecreatefrompng($sourcePath);
+            elseif ($ext === 'jpg' || $ext === 'jpeg') $sourceImage = @imagecreatefromjpeg($sourcePath);
+            elseif ($ext === 'gif') $sourceImage = @imagecreatefromgif($sourcePath);
+            elseif ($ext === 'webp') $sourceImage = @imagecreatefromwebp($sourcePath);
+
+            if ($sourceImage) {
+                $width = imagesx($sourceImage);
+                $height = imagesy($sourceImage);
+                $targetImage = imagecreatetruecolor($size, $size);
+                
+                // Preserve transparency for PNG/WebP
+                imagealphablending($targetImage, false);
+                imagesavealpha($targetImage, true);
+                $transparent = imagecolorallocatealpha($targetImage, 0, 0, 0, 127);
+                imagefill($targetImage, 0, 0, $transparent);
+
+                imagecopyresampled($targetImage, $sourceImage, 0, 0, 0, 0, $size, $size, $width, $height);
+                imagepng($targetImage, $destPath);
+                imagedestroy($sourceImage);
+                imagedestroy($targetImage);
+            }
+        }
+
+        resize_and_save_pwa_icon($dest, $uploadDir . '/logo-192.png', 192);
+        resize_and_save_pwa_icon($dest, $uploadDir . '/logo-512.png', 512);
+
       } else {
         $logo_error = 'Gagal upload logo.';
       }

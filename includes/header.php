@@ -12,13 +12,14 @@ $logged_in = isset($_SESSION['user']);
 $role      = $logged_in ? ($_SESSION['user']['role'] ?? null) : null;
 // ===== Fetch Store Settings for Header =====
 try {
-    $header_setting = $pdo->query("SELECT store_name, theme FROM settings WHERE id=1")->fetch(PDO::FETCH_ASSOC) ?: [];
+    $header_setting = $pdo->query("SELECT store_name, theme, logo_url FROM settings WHERE id=1")->fetch(PDO::FETCH_ASSOC) ?: [];
 } catch (PDOException $e) {
     // Fallsback if table/columns don't exist yet
     $header_setting = ['store_name' => 'TokoAPP', 'theme' => 'dark'];
 }
 $store_name = $header_setting['store_name'] ?? 'TokoAPP';
 $app_theme = $header_setting['theme'] ?? 'dark';
+$app_logo  = !empty($header_setting['logo_url']) ? $header_setting['logo_url'] : 'uploads/logo.jpg';
 ?>
 <!doctype html>
 <html lang="id" data-theme="<?= htmlspecialchars($app_theme) ?>">
@@ -27,7 +28,7 @@ $app_theme = $header_setting['theme'] ?? 'dark';
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= htmlspecialchars($store_name) ?></title>
 
-  <link rel="icon" type="image/png" href="uploads/logo.jpg">
+  <link rel="icon" type="image/png" href="<?= htmlspecialchars($app_logo) ?>">
 
   <!-- PWA -->
   <link rel="manifest" href="manifest.webmanifest">

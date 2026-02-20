@@ -11,6 +11,7 @@ $setting = $pdo->query("
   SELECT
     store_name,
     theme,
+    logo_url,
     rupiah_per_point_umum,
     rupiah_per_point_grosir,
     redeem_rp_per_point_umum,
@@ -21,6 +22,7 @@ $setting = $pdo->query("
 
 $store = $setting['store_name'] ?? 'TOKO';
 $app_theme = $setting['theme'] ?? 'dark';
+$app_logo = !empty($setting['logo_url']) ? $setting['logo_url'] : '/tokoapp/uploads/logo.jpg';
 
 // 1 poin = berapa Rupiah potongan?
 $redeem_umum = (int)($setting['rupiah_per_point_umum'] ?? 0);
@@ -37,7 +39,7 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
   <meta charset="utf-8">
   <title><?= htmlspecialchars($store) ?> — POS Display</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" type="image/png" href="/tokoapp/uploads/logo.jpg">
+  <link rel="icon" type="image/png" href="<?= htmlspecialchars($app_logo) ?>">
 
   <style>
     :root{
