@@ -2,6 +2,8 @@
 // auth/login.php
 require_once __DIR__ . '/../config.php';
 
+$err = '';
+
 // Ambil data pengaturan toko
 $setting = $pdo->query("SELECT store_name, logo_url FROM settings WHERE id=1")->fetch(PDO::FETCH_ASSOC) ?: [];
 $store_name = $setting['store_name'] ?? 'TokoAPP';
