@@ -74,7 +74,8 @@ $app_logo  = !empty($header_setting['logo_url']) ? $header_setting['logo_url'] :
       border-color: #7dd3fc !important;
       color: #000000 !important;
     }
-    .muted, small, .top-right span { color: #475569 !important; }
+    .muted, small, .top-right span, p[style*="opacity"], div[style*="opacity"] { color: #1e293b !important; opacity: 1 !important; }
+    header { color: #000000 !important; font-weight: 700 !important; }
     <?php endif; ?>
 
     html{font-size:18px}
