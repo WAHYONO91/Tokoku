@@ -886,14 +886,16 @@ window.addEventListener('keydown', (e) => {
   // F7: set qty untuk item berikutnya sebelum scan/Enter
   if (e.key === 'F7') {
     e.preventDefault();
-    const current = pendingQty || 1;
-    const input = prompt('Masukkan jumlah (qty) untuk item berikutnya:', String(current));
+    const current = String(pendingQty || 1);
+    const input = prompt('Set Qty untuk item berikutnya (scan selanjutnya):', current);
     if (input === null) {
       focusBarcode();
       return;
     }
-    let v = parseInt(input, 10);
-    if (isNaN(v) || v <= 0) v = 1;
+    let v = parseInt(String(input).replace(/[^\d]/g,''), 10);
+    if (!v || v <= 0) v = 1;
+    if (v > 1000000) v = 1000000;
+    
     setPendingQty(v);
     focusBarcode();
     return;

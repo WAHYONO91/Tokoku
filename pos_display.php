@@ -10,6 +10,7 @@ require_access('DASHBOARD');
 $setting = $pdo->query("
   SELECT
     store_name,
+    theme,
     rupiah_per_point_umum,
     rupiah_per_point_grosir,
     redeem_rp_per_point_umum,
@@ -19,6 +20,7 @@ $setting = $pdo->query("
 ")->fetch(PDO::FETCH_ASSOC);
 
 $store = $setting['store_name'] ?? 'TOKO';
+$app_theme = $setting['theme'] ?? 'dark';
 
 // 1 poin = berapa Rupiah potongan?
 $redeem_umum = (int)($setting['rupiah_per_point_umum'] ?? 0);
@@ -30,7 +32,7 @@ if ($redeem_grosir <= 0) $redeem_grosir = (int)($setting['redeem_rp_per_point_gr
 if ($redeem_grosir <= 0) $redeem_grosir = 25;
 ?>
 <!doctype html>
-<html lang="id" data-theme="dark">
+<html lang="id" data-theme="<?= htmlspecialchars($app_theme) ?>">
 <head>
   <meta charset="utf-8">
   <title><?= htmlspecialchars($store) ?> — POS Display</title>
@@ -39,9 +41,10 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
 
   <style>
     :root{
-      color-scheme: dark;
+      color-scheme: <?= $app_theme === 'light' ? 'light' : 'dark' ?>;
       --topbar-h: 48px;
       --gap: .75rem;
+      <?php if ($app_theme === 'dark'): ?>
       --card-bg: #0e1726;
       --card-bd: #1f2a3a;
       --page-bg: #0b1220;
@@ -50,6 +53,16 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
       --accent: #7dd3fc;
       --warn: #facc15;
       --danger: #fb7185;
+      <?php else: ?>
+      --card-bg: #ffffff;
+      --card-bd: #e2e8f0;
+      --page-bg: #f8fafc;
+      --text: #1e293b;
+      --muted: #64748b;
+      --accent: #0284c7;
+      --warn: #eab308;
+      --danger: #e11d48;
+      <?php endif; ?>
     }
     *{box-sizing:border-box}
     html,body{height:100%}
@@ -65,14 +78,14 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
       height:var(--topbar-h);
       position:sticky;top:0;z-index:50;
       display:flex;align-items:center;justify-content:space-between;
-      padding:0 .8rem;background:#020817;border-bottom:1px solid var(--card-bd);
+      padding:0 .8rem;background: <?= $app_theme === 'dark' ? '#020817' : '#f1f5f9' ?>;border-bottom:1px solid var(--card-bd);
     }
     .brand{font-weight:700;letter-spacing:.02em;font-size:1rem}
     .sub{font-size:.75rem;opacity:.75}
     .clock{
       font-size:.85rem;
-      background:#0e1726;
-      border:1px solid #223044;
+      background: <?= $app_theme === 'dark' ? '#0e1726' : '#ffffff' ?>;
+      border:1px solid <?= $app_theme === 'dark' ? '#223044' : '#cbd5e1' ?>;
       padding:.2rem .45rem;
       border-radius:.4rem;
       white-space:nowrap
@@ -100,9 +113,9 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
       gap: 1.25rem;
       padding: .8rem 1.05rem;
       border-radius: .75rem;
-      background: linear-gradient(180deg, #081224 0%, #0b162a 100%);
-      border: 1px solid #22406188;
-      box-shadow: 0 6px 16px rgba(0,0,0,.35), inset 0 0 0 1px rgba(125,211,252,.08);
+      background: <?= $app_theme === 'dark' ? 'linear-gradient(180deg, #081224 0%, #0b162a 100%)' : 'linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%)' ?>;
+      border: 1px solid <?= $app_theme === 'dark' ? '#22406188' : '#bae6fd' ?>;
+      box-shadow: 0 6px 16px rgba(0,0,0,<?= $app_theme === 'dark' ? '.35' : '.1' ?>), inset 0 0 0 1px rgba(125,211,252,.08);
     }
     .grand .lbl{
       font-size: .86rem;
@@ -119,10 +132,9 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
       font-weight: 900;
       font-size: clamp(1.7rem, 2.3vw + 1rem, 3.1rem);
       letter-spacing: .03em;
-      color: #7dd3fc;
-      text-shadow: 0 0 6px rgba(125,211,252,.8),
-                   0 0 14px rgba(56,189,248,.55),
-                   0 0 28px rgba(56,189,248,.35);
+      color: <?= $app_theme === 'dark' ? '#7dd3fc' : '#0369a1' ?>;
+      text-shadow: 0 0 6px rgba(125,211,252,<?= $app_theme === 'dark' ? '.8' : '.2' ?>),
+                   0 0 14px rgba(56,189,248,<?= $app_theme === 'dark' ? '.55' : '.1' ?>);
     }
     .grand.kembalian .num{
       color: var(--warn);
@@ -140,8 +152,8 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
       min-width: 135px;
       padding:.38rem .62rem;
       border-radius:.55rem;
-      background:rgba(15,23,42,.8);
-      border:1px solid rgba(148,163,184,.45);
+      background: <?= $app_theme === 'dark' ? 'rgba(15,23,42,.8)' : '#f1f5f9' ?>;
+      border:1px solid <?= $app_theme === 'dark' ? 'rgba(148,163,184,.45)' : '#cbd5e1' ?>;
     }
     .meta-label{
       font-size:.68rem;
@@ -175,9 +187,9 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
       font-size:1.02rem;
       padding:.5rem .6rem;
       border-radius:.5rem;
-      border:1px solid #263243;
+      border:1px solid var(--card-bd);
       outline:none;
-      background:#091120;
+      background: <?= $app_theme === 'dark' ? '#091120' : '#ffffff' ?>;
       color:var(--text);
     }
 
@@ -189,13 +201,13 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
       width:100%;
       overflow:auto;
       border-radius:.45rem;
-      border:1px solid #213047;
-      background:#0b1324;
+      border:1px solid var(--card-bd);
+      background: <?= $app_theme === 'dark' ? '#0b1324' : '#ffffff' ?>;
       max-height:none; /* DIKUNCI via JS supaya pas 25 baris */
     }
     table{ width:100%; border-collapse:collapse; font-size:.78rem; }
     th,td{
-      border:1px solid #213047;
+      border:1px solid var(--card-bd);
       padding:.28rem .38rem;
       vertical-align:middle;
       line-height:1.2;
@@ -204,14 +216,14 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
       position: sticky;
       top: 0;
       z-index: 2;
-      background:#0f1a2c;
+      background: <?= $app_theme === 'dark' ? '#0f1a2c' : '#f1f5f9' ?>;
       font-weight:700;
       white-space:nowrap;
     }
     td{ word-break:break-word; }
-    tbody tr:nth-child(odd){ background:#0b1324 }
+    tbody tr:nth-child(odd){ background: <?= $app_theme === 'dark' ? '#0b1324' : '#f8fafc' ?> }
     .right{text-align:right}
-    tr.active-row td{ background:#0b1a34 !important }
+    tr.active-row td{ background: <?= $app_theme === 'dark' ? '#0b1a34' : '#e0f2fe' ?> !important }
 
     .col-kode{ width: 140px; }
     .col-qty{ width: 96px; }
@@ -223,8 +235,8 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
     .priceRow{ display:flex; align-items:center; justify-content:space-between; gap:.4rem; }
     .priceText{ font-variant-numeric: tabular-nums; }
     .lvlSel{
-      background:#091120;
-      border:1px solid #263243;
+      background: <?= $app_theme === 'dark' ? '#091120' : '#ffffff' ?>;
+      border:1px solid var(--card-bd);
       color:var(--text);
       border-radius:.35rem;
       padding:.2rem .3rem;
@@ -253,20 +265,25 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
       font-size: 1.0rem;
       padding: .62rem .7rem;
       border-radius: .55rem;
-      background:#091120;
-      border:1px solid #263243;
+      background: <?= $app_theme === 'dark' ? '#091120' : '#ffffff' ?>;
+      border:1px solid var(--card-bd);
       color:var(--text);
     }
 
     .row{display:flex;gap:.4rem;align-items:center}
     .muted{font-size:.8rem;color:var(--muted)}
     .btn{
-      background:#1f2b3e;
-      border:1px solid #2c3c55;
-      color:var(--text);
+      background: <?= $app_theme === 'dark' ? '#1f2b3e' : '#bae6fd' ?>;
+      border:1px solid <?= $app_theme === 'dark' ? '#2c3c55' : '#7dd3fc' ?>;
+      color: <?= $app_theme === 'dark' ? 'var(--text)' : '#0369a1' ?>;
       padding:.55rem .75rem;
       border-radius:.5rem;
-      cursor:pointer
+      cursor:pointer;
+      font-weight: 500;
+    }
+    .btn:hover{
+        background: <?= $app_theme === 'dark' ? '#2c3c55' : '#7dd3fc' ?>;
+        color: <?= $app_theme === 'dark' ? 'var(--text)' : '#0c4a6e' ?>;
     }
     .btn:active{transform:translateY(1px)}
     .btn[disabled]{
@@ -307,7 +324,7 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
     }
 
     tfoot th {
-      background: #0c1628;
+      background: <?= $app_theme === 'dark' ? '#0c1628' : '#e2e8f0' ?>;
       font-weight: 700;
       font-size: 0.86rem;
       position: sticky;
@@ -331,13 +348,13 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
     }
     #changeOverlay.show{ display:flex; }
     #changeOverlay .box{
-      background:#0e1726;
-      border:1px solid #223044;
+      background: <?= $app_theme === 'dark' ? '#0e1726' : '#ffffff' ?>;
+      border:1px solid <?= $app_theme === 'dark' ? '#223044' : '#cbd5e1' ?>;
       border-radius:14px;
       padding:18px 22px;
       min-width:320px;
       text-align:center;
-      box-shadow:0 10px 30px rgba(0,0,0,.5);
+      box-shadow:0 10px 30px rgba(0,0,0,<?= $app_theme === 'dark' ? '.5' : '.1' ?>);
     }
     #changeOverlay .ttl{
       font-size:.9rem;

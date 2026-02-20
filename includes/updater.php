@@ -44,19 +44,46 @@ class MigrationManager {
         }
     }
 
+    private function findGitPath() {
+        // 1. Cek global git via shell
+        $version = shell_exec("git --version 2>&1");
+        if ($version && strpos($version, 'git version') !== false) {
+            return 'git';
+        }
+
+        // 2. Cek lokasi umum di Windows (jika PATH tidak terdeteksi oleh Apache/PHP)
+        $candidates = [
+            'C:\\Program Files\\Git\\bin\\git.exe',
+            'C:\\Program Files\\Git\\cmd\\git.exe',
+            'C:\\Program Files (x86)\\Git\\bin\\git.exe',
+            'C:\\Program Files (x86)\\Git\\cmd\\git.exe',
+            // Tambahkan lokasi lain jika perlu (misal user install di D:)
+        ];
+
+        foreach ($candidates as $p) {
+            if (file_exists($p)) {
+                 // Bungkus path dengan quote untuk safety space
+                return '"' . $p . '"';
+            }
+        }
+        
+        return null;
+    }
+
     public function runGitPull() {
         $this->log[] = "INFO: Attempting to pull latest code from GitHub...";
         
-        // Cek apakah git terinstall
-        $check = shell_exec("git --version");
-        if (!$check) {
-            $this->log[] = "ERROR: Git tidak ditemukan di PATH sistem. Update kode gagal.";
+        $gitPath = $this->findGitPath();
+
+        if (!$gitPath) {
+            $this->log[] = "ERROR: Git tidak ditemukan di PATH sistem maupun lokasi default. Mohon cek instalasi Git atau tambahkan ke PATH ENV.";
             return false;
         }
 
         // Jalankan git pull
-        // Kita gunakan origin main sesuai info sebelumnya
-        $output = shell_exec("git pull origin main 2>&1");
+        $cmd = "$gitPath pull origin main 2>&1";
+        $output = shell_exec($cmd);
+        
         if ($output) {
             $this->log[] = "GIT OUTPUT: " . trim($output);
             if (strpos($output, 'Updating') !== false || strpos($output, 'Already up to date') !== false) {
