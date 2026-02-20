@@ -350,7 +350,7 @@ if (table_exists($pdo,'items')) {
     <article style="margin:0;">
       <header>Pembelian Hari Ini</header>
       <strong style="font-size:1.35rem;"><?= 'Rp '.number_format($pb_today,0,',','.') ?></strong>
-      <p style="margin-bottom:0;opacity:.85">Bulan ini: <?= 'Rp '.number_format($pb_month,0,',','.') ?></p>
+      <p style="margin-bottom:0;">Bulan ini: <?= 'Rp '.number_format($pb_month,0,',','.') ?></p>
     </article>
   </div>
   <?php
@@ -391,7 +391,7 @@ if (table_exists($pdo, 'member_ar')) {
   </header>
 
   <?php if (!table_exists($pdo, 'member_ar')): ?>
-    <p style="opacity:.85;margin:.5rem 0">
+    <p style="margin-bottom:.5rem; margin-top:.5rem;">
       Tabel <code>member_ar</code> belum tersedia.
     </p>
   <?php else: ?>
@@ -447,7 +447,7 @@ if (table_exists($pdo, 'member_ar') && table_exists($pdo, 'members')) {
   </header>
 
   <?php if (empty($ar_latest)): ?>
-    <p style="opacity:.85;margin:.5rem 0">Belum ada data piutang.</p>
+    <p style="margin-bottom:.5rem; margin-top:.5rem;">Belum ada data piutang.</p>
   <?php else: ?>
     <div style="overflow:auto;margin-top:.6rem;">
       <table class="table-small" style="min-width:900px">
@@ -532,11 +532,11 @@ if (table_exists($pdo, 'member_ar') && table_exists($pdo, 'members')) {
             <strong style="font-size:1.35rem;">
               <?= ($cash_balance_today>=0?'Rp ':'- Rp ') . number_format(abs($cash_balance_today),0,',','.') ?>
             </strong>
-            <p style="margin-bottom:0;opacity:.85"><?= $cash_balance_today>=0 ? 'Positif' : 'Defisit' ?></p>
+            <p style="margin-bottom:0;"><?= $cash_balance_today>=0 ? 'Positif' : 'Defisit' ?></p>
           </article>
         </div>
       <?php else: ?>
-        <p style="opacity:.85;margin:.5rem 0">
+        <p style="margin-bottom:.5rem; margin-top:.5rem;">
           Tabel <code>cash_ledger</code> belum tersedia atau kolom wajib belum lengkap.
           Minimal: <code>direction</code>, <code>amount</code>, dan <code>tanggal</code> (DATE)
           atau <code>created_at</code> (DATETIME).
