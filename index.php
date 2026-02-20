@@ -520,12 +520,12 @@ if (table_exists($pdo, 'member_ar') && table_exists($pdo, 'members')) {
           <article style="margin:0;">
             <header>Kas Masuk</header>
             <strong style="font-size:1.35rem;">Rp <?= number_format($cash_in_today,0,',','.') ?></strong>
-            <p style="margin-bottom:0;opacity:.85">Tanggal: <?= date('d-m-Y') ?></p>
+            <p style="margin-bottom:0;">Tanggal: <?= date('d-m-Y') ?></p>
           </article>
           <article style="margin:0;">
             <header>Kas Keluar</header>
             <strong style="font-size:1.35rem;">Rp <?= number_format($cash_out_today,0,',','.') ?></strong>
-            <p style="margin-bottom:0;opacity:.85">Tanggal: <?= date('d-m-Y') ?></p>
+            <p style="margin-bottom:0;">Tanggal: <?= date('d-m-Y') ?></p>
           </article>
           <article style="margin:0;">
             <header>Saldo Kas (Hari Ini)</header>

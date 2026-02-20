@@ -187,12 +187,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // --- Generate PWA Icons (192x192 and 512x512) ---
         function resize_and_save_pwa_icon($sourcePath, $destPath, $size) {
-            $ext = strtolower(pathinfo($sourcePath, PATHINFO_EXTENSION));
-            $sourceImage = null;
-            if ($ext === 'png') $sourceImage = @imagecreatefrompng($sourcePath);
-            elseif ($ext === 'jpg' || $ext === 'jpeg') $sourceImage = @imagecreatefromjpeg($sourcePath);
-            elseif ($ext === 'gif') $sourceImage = @imagecreatefromgif($sourcePath);
-            elseif ($ext === 'webp') $sourceImage = @imagecreatefromwebp($sourcePath);
+            $data = @file_get_contents($sourcePath);
+            if (!$data) return;
+            $sourceImage = @imagecreatefromstring($data);
 
             if ($sourceImage) {
                 $width = imagesx($sourceImage);
@@ -214,6 +211,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         resize_and_save_pwa_icon($dest, $uploadDir . '/logo-192.png', 192);
         resize_and_save_pwa_icon($dest, $uploadDir . '/logo-512.png', 512);
+
+        // --- Update PWA Manifest with new name/colors ---
+        function update_pwa_manifest($store_name, $theme) {
+            $manifestPath = __DIR__ . '/manifest.webmanifest';
+            $color = ($theme === 'light') ? '#f8fafc' : '#0f172a';
+            $manifest = [
+                "name" => $store_name,
+                "short_name" => $store_name,
+                "description" => "Aplikasi kasir dan manajemen toko berbasis WebApp.",
+                "id" => "/tokoapp/index.php",
+                "start_url" => "index.php",
+                "scope" => "/tokoapp/",
+                "display" => "standalone",
+                "background_color" => $color,
+                "theme_color" => $color,
+                "icons" => [
+                    [
+                        "src" => "uploads/logo-192.png",
+                        "sizes" => "192x192",
+                        "type" => "image/png"
+                    ],
+                    [
+                        "src" => "uploads/logo-512.png",
+                        "sizes" => "512x512",
+                        "type" => "image/png"
+                    ]
+                ]
+            ];
+            @file_put_contents($manifestPath, json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        }
+        update_pwa_manifest($store_name, $theme);
 
       } else {
         $logo_error = 'Gagal upload logo.';
@@ -298,6 +326,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $theme
     ]);
     log_activity($pdo, 'UPDATE_SETTINGS', "Mengubah pengaturan toko (Nama: $store_name)");
+    
+    // Pastikan manifest diperbarui meskipun logo tidak diganti
+    if (function_exists('update_pwa_manifest')) {
+        update_pwa_manifest($store_name, $theme);
+    } else {
+        // Redefine if not defined in logo upload block
+        $manifestPath = __DIR__ . '/manifest.webmanifest';
+        $color = ($theme === 'light') ? '#f8fafc' : '#0f172a';
+        $manifest = [
+            "name" => $store_name, "short_name" => $store_name,
+            "description" => "Aplikasi kasir dan manajemen toko berbasis WebApp.",
+            "id" => "/tokoapp/index.php", "start_url" => "index.php", "scope" => "/tokoapp/",
+            "display" => "standalone", "background_color" => $color, "theme_color" => $color,
+            "icons" => [
+                ["src" => "uploads/logo-192.png", "sizes" => "192x192", "type" => "image/png"],
+                ["src" => "uploads/logo-512.png", "sizes" => "512x512", "type" => "image/png"]
+            ]
+        ];
+        @file_put_contents($manifestPath, json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+    }
+
     $msg = 'Pengaturan disimpan.';
   } catch (PDOException $e1) {
     $msg = 'Gagal menyimpan pengaturan: ' . $e1->getMessage();
