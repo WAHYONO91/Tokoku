@@ -57,10 +57,10 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
       --danger: #fb7185;
       <?php else: ?>
       --card-bg: #ffffff;
-      --card-bd: #e2e8f0;
+      --card-bd: #cbd5e1;
       --page-bg: #f8fafc;
-      --text: #1e293b;
-      --muted: #64748b;
+      --text: #000000;
+      --muted: #475569;
       --accent: #0284c7;
       --warn: #eab308;
       --danger: #e11d48;
@@ -122,9 +122,10 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
     .grand .lbl{
       font-size: .86rem;
       letter-spacing: .04em;
-      color: #8fb8ff;
+      color: <?= $app_theme === 'dark' ? '#8fb8ff' : '#0369a1' ?>;
       opacity: .92;
       text-transform:uppercase;
+      font-weight: 600;
     }
     .grand.kembalian .lbl{
       color: var(--warn);
@@ -161,14 +162,15 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
       font-size:.68rem;
       letter-spacing:.06em;
       text-transform:uppercase;
-      color:#9ca3af;
+      color: <?= $app_theme === 'dark' ? '#9ca3af' : '#475569' ?>;
       margin-bottom:.1rem;
+      font-weight: 600;
     }
     .meta-value{
       font-family:ui-monospace,Consolas,Menlo,monospace;
       font-size:.98rem;
       font-weight:800;
-      color:#e5e7eb;
+      color: <?= $app_theme === 'dark' ? '#e5e7eb' : '#000000' ?>;
     }
 
     .card{

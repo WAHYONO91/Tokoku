@@ -49,30 +49,32 @@ $app_logo  = !empty($header_setting['logo_url']) ? $header_setting['logo_url'] :
     body{background:#0f172a;color:#e2e8f0;line-height:1.4}
     nav.topbar{background:#020617;border-bottom:1px solid #1f2937;}
     <?php else: ?>
-    body{line-height:1.4}
-    nav.topbar{background:#f8fafc;border-bottom:1px solid #e2e8f0; color: #1e293b}
-    .top-right{color:#64748b !important}
+    body{line-height:1.4; color: #000000 !important;}
+    nav.topbar{background:#f8fafc;border-bottom:1px solid #e2e8f0; color: #000000}
+    .top-right{color:#1e293b !important}
     
     /* Tombol & Menu Light Blue untuk Tema Terang */
     button, [role="button"], .button, .btn {
       background-color: #bae6fd !important; /* light blue 200 */
-      color: #0369a1 !important; /* sky 700 */
+      color: #000000 !important;
       border: 1px solid #7dd3fc !important;
+      font-weight: 600;
     }
     button:hover, [role="button"]:hover, .button:hover, .btn:hover {
       background-color: #7dd3fc !important; /* light blue 300 */
-      color: #0c4a6e !important; /* sky 800 */
+      color: #000000 !important;
     }
     .menu-card {
       background-color: #f1f5f9 !important;
-      border-color: #e2e8f0 !important;
-      color: #1e293b !important;
+      border-color: #cbd5e1 !important;
+      color: #000000 !important;
     }
     .menu-card:hover {
       background-color: #bae6fd !important;
       border-color: #7dd3fc !important;
-      color: #0369a1 !important;
+      color: #000000 !important;
     }
+    .muted, small, .top-right span { color: #475569 !important; }
     <?php endif; ?>
 
     html{font-size:18px}
