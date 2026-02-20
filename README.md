@@ -151,9 +151,33 @@ Tidak perlu internet, cukup jaringan LAN.
 
 ---
 
+## Update & Manajemen (Git & Composer)
 
+### 1. Mengambil Update Terbaru (Git Pull)
+Jika Anda menggunakan Git untuk mengelola project ini, jalankan perintah ini di terminal untuk menarik kode terbaru dari GitHub:
+```bash
+git pull origin main
+```
+*Catatan: Pastikan Anda berada di folder `htdocs/tokoapp`.*
 
-\## Struktur Folder Singkat
+### 2. Update Database & Dependency (Composer)
+Aplikasi ini sekarang mendukung **Composer** untuk mempermudah update database secara otomatis.
+
+**Instalasi Pertama / Update Total:**
+Jalankan perintah ini setelah melakukan `git pull` untuk memastikan semua dependency dan database sudah up-to-date:
+```bash
+composer install
+```
+
+**Update Database Manual via CLI:**
+Jika Anda hanya ingin menjalankan migrasi database tanpa update dependency, gunakan:
+```bash
+composer run-script migrate
+```
+
+---
+
+## Struktur Folder Singkat
 
 \- `api/` : endpoint API internal (barang, member, stok, transaksi hold, dsb.)
 
