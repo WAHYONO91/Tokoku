@@ -2,7 +2,10 @@
 // auth/login.php
 require_once __DIR__ . '/../config.php';
 
-$err = '';
+// Ambil data pengaturan toko
+$setting = $pdo->query("SELECT store_name, logo_url FROM settings WHERE id=1")->fetch(PDO::FETCH_ASSOC) ?: [];
+$store_name = $setting['store_name'] ?? 'TokoAPP';
+$app_logo = !empty($setting['logo_url']) ? $setting['logo_url'] : '/tokoapp/uploads/logo.png';
 
 // cari background dinamis dari /uploads
 $bgUrl    = '';
@@ -44,13 +47,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="id">
 <head>
   <meta charset="utf-8">
-  <title>PelangiMart</title>
+  <title><?= htmlspecialchars($store_name) ?> - Login</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
 
   <!-- PWA manifest & icon -->
   <link rel="manifest" href="/tokoapp/manifest.webmanifest">
   <meta name="theme-color" content="#0f172a">
-  <link rel="icon" type="image/png" href="/tokoapp/uploads/logo.png">
+  <link rel="icon" type="image/png" href="<?= htmlspecialchars($app_logo) ?>">
 
   <link rel="stylesheet" href="/tokoapp/assets/vendor/pico/pico.min.css">
   <style>
@@ -125,11 +128,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
   <main class="login-wrap">
-    <!-- kalau mau ganti logo, pastikan file ada di /uploads -->
-    <img src="/tokoapp/uploads/logo.png" alt="Logo PelangiMart" class="logo-img">
+    <img src="<?= htmlspecialchars($app_logo) ?>" alt="Logo <?= htmlspecialchars($store_name) ?>" class="logo-img">
 
     <div class="top-mini">Selamat datang di</div>
-    <div class="app-title">Aplikasi PelangiMart</div>
+    <div class="app-title">Aplikasi <?= htmlspecialchars($store_name) ?></div>
     <p class="sub">Silakan login dengan akun yang sudah terdaftar.</p>
 
     <?php if ($err): ?>
