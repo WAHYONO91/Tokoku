@@ -211,5 +211,21 @@ function run_app_updates(PDO $pdo) {
         }
     });
 
+    // 10. Perbaikan kolom PURCHASES & PURCHASE_ITEMS
+    $mgr->apply('2025_03_08_fix_purchase_columns', function($pdo) {
+        $pdo->exec("ALTER TABLE purchases ADD COLUMN IF NOT EXISTS invoice_no VARCHAR(50) AFTER location");
+        $pdo->exec("ALTER TABLE purchases ADD COLUMN IF NOT EXISTS purchase_date DATE AFTER invoice_no");
+        $pdo->exec("ALTER TABLE purchases ADD COLUMN IF NOT EXISTS discount BIGINT DEFAULT 0 AFTER subtotal");
+        $pdo->exec("ALTER TABLE purchases ADD COLUMN IF NOT EXISTS tax BIGINT DEFAULT 0 AFTER discount");
+        $pdo->exec("ALTER TABLE purchases ADD COLUMN IF NOT EXISTS note VARCHAR(255) AFTER total");
+        $pdo->exec("ALTER TABLE purchases ADD COLUMN IF NOT EXISTS created_by VARCHAR(50) AFTER note");
+        
+        $pdo->exec("ALTER TABLE purchase_items ADD COLUMN IF NOT EXISTS total BIGINT DEFAULT 0 AFTER harga_beli");
+        $pdo->exec("ALTER TABLE purchase_items ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+        
+        // Sesuaikan tipe data jika perlu
+        $pdo->exec("ALTER TABLE purchases MODIFY COLUMN supplier_kode VARCHAR(50)");
+    });
+
     return $mgr->getLogs();
 }

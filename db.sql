@@ -117,11 +117,17 @@ CREATE TABLE IF NOT EXISTS purchases (
   supplier_id INT NULL,
   supplier_kode VARCHAR(50),
   location ENUM('gudang','toko') NOT NULL DEFAULT 'gudang',
+  purchase_date DATE,
+  invoice_no VARCHAR(50),
   subtotal BIGINT NOT NULL DEFAULT 0,
+  discount BIGINT NOT NULL DEFAULT 0,
+  tax BIGINT NOT NULL DEFAULT 0,
   total BIGINT NOT NULL DEFAULT 0,
   bayar BIGINT DEFAULT 0,
   sisa BIGINT DEFAULT 0,
   status_lunas TINYINT(1) DEFAULT 1,
+  note VARCHAR(255),
+  created_by VARCHAR(50),
   FOREIGN KEY (user_id) REFERENCES users(id),
   FOREIGN KEY (supplier_id) REFERENCES suppliers(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -133,7 +139,8 @@ CREATE TABLE IF NOT EXISTS purchase_items (
   nama_item VARCHAR(255) NOT NULL,
   qty INT NOT NULL,
   harga_beli BIGINT NOT NULL,
-  total BIGINT NOT NULL,
+  total BIGINT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (purchase_id) REFERENCES purchases(id) ON DELETE CASCADE,
   FOREIGN KEY (item_kode) REFERENCES items(kode)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
