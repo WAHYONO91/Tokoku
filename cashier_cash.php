@@ -177,14 +177,15 @@ if ($edit_id) {
   }
   [data-theme="light"] {
     --card-bg:#ffffff;
-    --card-bd:#cbd5e1; /* Darker border for light theme */
-    --page-bg:#f1f5f9; /* Slightly darker page background for contrast */
+    --card-bd:#cbd5e1;
+    --page-bg:#f1f5f9;
     --text:#0f172a;
     --accent:#0284c7;
+    --input-bg:#ffffff;
     --input-bd:#94a3b8;
     --tag-bg:#e0f2fe;
     --tag-text:#0369a1;
-    --text-muted:#475569; /* Darker muted text for light theme */
+    --text-muted:#475569;
   }
   [data-theme="dark"] {
     --text-muted: #94a3b8;
