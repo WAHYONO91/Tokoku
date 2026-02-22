@@ -172,10 +172,29 @@ function telp_val(array $r): string {
 require_once __DIR__.'/includes/header.php';
 ?>
 <style>
-.form-card{border:1px solid #1f2937;border-radius:12px;padding:1rem;background:#0f172a;margin-bottom:1rem}
-.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.8rem}
-.form-actions{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.5rem}
-.table-actions{white-space:nowrap;display:flex;gap:.4rem}
+  :root {
+    --card-bg: #0f172a;
+    --card-bd: #1f2937;
+    --text-main: #e2e8f0;
+    --text-muted: #94a3b8;
+    --input-bg: #0f172a;
+    --input-bd: #1f2937;
+  }
+  [data-theme="light"] {
+    --card-bg: #ffffff;
+    --card-bd: #cbd5e1;
+    --text-main: #0f172a;
+    --text-muted: #475569;
+    --input-bg: #ffffff;
+    --input-bd: #94a3b8;
+  }
+  .form-card{border:1px solid var(--card-bd);border-radius:12px;padding:1rem;background:var(--card-bg);margin-bottom:1rem;color:var(--text-main)}
+  .form-card label{display:block;margin-bottom:.2rem;font-weight:600;color:var(--text-main)}
+  .form-card input{background:var(--input-bg) !important;border:1px solid var(--input-bd) !important;color:var(--text-main) !important}
+  .form-card small{color:var(--text-muted);font-size:.78rem;display:block;margin-top:.2rem}
+  .grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.8rem}
+  .form-actions{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.5rem}
+  .table-actions{white-space:nowrap;display:flex;gap:.4rem}
 </style>
 
 <article>
