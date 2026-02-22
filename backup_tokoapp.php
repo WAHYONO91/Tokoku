@@ -27,21 +27,48 @@ $mode   = $_GET['mode'] ?? ''; // kontrol utama
 $step   = 1000; // batch insert
 
 function page_header($title='Backup DB') {
-  echo "<!doctype html><html lang='id'><head><meta charset='utf-8'><title>{$title}</title>
+  global $pdo;
+  try {
+    $set = $pdo->query("SELECT theme FROM settings WHERE id=1")->fetch(PDO::FETCH_ASSOC) ?: [];
+  } catch (PDOException $e) {
+    $set = ['theme' => 'dark'];
+  }
+  $theme = $set['theme'] ?? 'dark';
+
+  echo "<!doctype html><html lang='id' data-theme='{$theme}'><head><meta charset='utf-8'><title>{$title}</title>
   <style>
-    body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:#0f172a;color:#e2e8f0;margin:0;padding:1rem}
+    :root {
+      --bg-page: #0f172a;
+      --card-bg: #111827;
+      --card-bd: #334155;
+      --text-main: #e2e8f0;
+      --text-muted: #94a3b8;
+      --btn-bg: #0b1220;
+      --row-bd: #1f2937;
+    }
+    [data-theme='light'] {
+      --bg-page: #f1f5f9;
+      --card-bg: #ffffff;
+      --card-bd: #cbd5e1;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --btn-bg: #ffffff;
+      --row-bd: #e2e8f0;
+    }
+    body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:var(--bg-page);color:var(--text-main);margin:0;padding:1rem}
     h1,h2,h3{margin:.2rem 0 .8rem}
     .wrap{max-width:900px;margin:0 auto}
-    .card{border:1px solid #334155;background:#111827;border-radius:.6rem;padding:1rem;margin-bottom:1rem}
+    .card{border:1px solid var(--card-bd);background:var(--card-bg);border-radius:.6rem;padding:1rem;margin-bottom:1rem;box-shadow: 0 1px 3px rgba(0,0,0,0.1);}
     .row{display:flex;gap:.6rem;flex-wrap:wrap}
-    .btn{border:1px solid #334155;background:#0b1220;color:#e2e8f0;padding:.5rem .8rem;border-radius:.4rem;text-decoration:none}
-    .btn:hover{background:#172032}
+    .btn{border:1px solid var(--card-bd);background:var(--btn-bg);color:var(--text-main);padding:.5rem .8rem;border-radius:.4rem;text-decoration:none;font-weight:500}
+    .btn:hover{filter: brightness(0.9);}
     table{width:100%;border-collapse:collapse;font-size:14px}
-    th,td{border:1px solid #1f2937;padding:.5rem .6rem}
-    a{color:#93c5fd;text-decoration:none}
+    th,td{border:1px solid var(--row-bd);padding:.5rem .6rem}
+    a{color:#0284c7;text-decoration:none}
+    [data-theme='dark'] a{color:#93c5fd}
     a:hover{text-decoration:underline}
     .right{text-align:right}
-    .muted{color:#94a3b8}
+    .muted{color:var(--text-muted)}
   </style></head><body><div class='wrap'>";
 }
 
