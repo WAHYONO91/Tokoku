@@ -71,29 +71,30 @@ class MigrationManager {
     }
 
     public function runGitPull() {
-        $this->log[] = "INFO: Attempting to pull latest code from GitHub...";
+        $this->log[] = "INFO: Attempting to sync code with GitHub...";
         
         $gitPath = $this->findGitPath();
 
         if (!$gitPath) {
-            $this->log[] = "ERROR: Git tidak ditemukan di PATH sistem maupun lokasi default. Mohon cek instalasi Git atau tambahkan ke PATH ENV.";
+            $this->log[] = "ERROR: Git tidak ditemukan.";
             return false;
         }
 
-        // Jalankan git pull dengan konfig safe.directory sementara untuk menghindari error ownership
-        $cmd = "$gitPath -c safe.directory=* pull origin main 2>&1";
-        $output = shell_exec($cmd);
-        
-        if ($output) {
-            $this->log[] = "GIT OUTPUT: " . trim($output);
-            if (strpos($output, 'Updating') !== false || strpos($output, 'Already up to date') !== false) {
-                return true;
-            } else {
-                return false;
-            }
+        // Jalankan fetch terlebih dahulu
+        $cmdFetch = "$gitPath -c safe.directory=* fetch origin main 2>&1";
+        $outFetch = shell_exec($cmdFetch);
+        $this->log[] = "GIT FETCH: " . trim($outFetch);
+
+        // Paksa reset --hard agar sinkron total dengan origin/main, 
+        // mengabaikan perubahan lokal yang sering disebabkan oleh perbedaan environment (Web vs CLI)
+        $cmdReset = "$gitPath -c safe.directory=* reset --hard origin/main 2>&1";
+        $outReset = shell_exec($cmdReset);
+        $this->log[] = "GIT RESET: " . trim($outReset);
+
+        if (strpos($outReset, 'HEAD is now at') !== false) {
+            return true;
         }
         
-        $this->log[] = "ERROR: Tidak ada output dari perintah git pull.";
         return false;
     }
 
