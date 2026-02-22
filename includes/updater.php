@@ -187,5 +187,28 @@ function run_app_updates(PDO $pdo) {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
     });
 
+    // 9. Buat tabel CASH_LEDGER (buku kas)
+    $mgr->apply('2025_03_08_create_cash_ledger_table', function($pdo) {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS cash_ledger (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            tanggal DATE NOT NULL,
+            shift TINYINT NULL,
+            user_id INT NULL,
+            direction ENUM('IN','OUT') NOT NULL,
+            type VARCHAR(50) NOT NULL,
+            amount BIGINT NOT NULL DEFAULT 0,
+            note VARCHAR(255) NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+        
+        // Pastikan kolom note ada jika tabel sudah ada sebelumnya
+        try {
+            $pdo->exec("ALTER TABLE cash_ledger ADD COLUMN IF NOT EXISTS note VARCHAR(255) NULL AFTER amount");
+        } catch (Exception $e) {
+            // Kolom mungkin sudah ada atau cara lain gagal, skip jika error karena kolom sdh ada
+        }
+    });
+
     return $mgr->getLogs();
 }

@@ -302,7 +302,7 @@ const pendingQtyInfo = document.createElement('div');
 pendingQtyInfo.id = 'pendingQtyInfo';
 pendingQtyInfo.style.marginTop = '.35rem';
 pendingQtyInfo.style.fontSize = '.8rem';
-pendingQtyInfo.style.color = '#9ca3af';
+pendingQtyInfo.style.color = 'black';
 pendingQtyInfo.textContent = 'Qty input berikutnya: 1 (tekan F7)';
 if (barcodeEl) {
   barcodeEl.insertAdjacentElement('afterend', pendingQtyInfo);
@@ -315,7 +315,7 @@ const stockInfo = document.createElement('div');
 stockInfo.id = 'stockInfo';
 stockInfo.style.marginTop = '.2rem';
 stockInfo.style.fontSize = '.8rem';
-stockInfo.style.color = '#9ca3af';
+stockInfo.style.color = 'black';
 stockInfo.textContent = 'Stok Gudang: - | Stok Toko: -';
 
 if (barcodeEl) {

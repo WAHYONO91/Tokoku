@@ -242,6 +242,19 @@ CREATE TABLE IF NOT EXISTS supplier_payments (
     metode VARCHAR(50) DEFAULT 'Tunai',
     keterangan TEXT,
     created_by VARCHAR(50),
-    INDEX (supplier_kode),
     INDEX (purchase_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ========== CASH LEDGER ==========
+CREATE TABLE IF NOT EXISTS cash_ledger (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  tanggal DATE NOT NULL,
+  shift TINYINT NULL,
+  user_id INT NULL,
+  direction ENUM('IN','OUT') NOT NULL,
+  type VARCHAR(50) NOT NULL,
+  amount BIGINT NOT NULL DEFAULT 0,
+  note VARCHAR(255) NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
