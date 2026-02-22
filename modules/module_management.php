@@ -14,6 +14,14 @@ if (!isset($pdo)) {
     die('Koneksi database tidak ditemukan');
 }
 
+// ambil setelan tema
+try {
+    $header_setting = $pdo->query("SELECT theme FROM settings WHERE id=1")->fetch(PDO::FETCH_ASSOC) ?: [];
+} catch (PDOException $e) {
+    $header_setting = ['theme' => 'dark'];
+}
+$app_theme = $header_setting['theme'] ?? 'dark';
+
 // Pastikan daftar modul di database up-to-date dengan MASTER (dari module_helper)
 sync_modules($pdo);
 $menuMaster = $MENU_MASTER; 
@@ -26,7 +34,7 @@ $modules = $pdo
     ->fetchAll();
 ?>
 <!DOCTYPE html>
-<html lang="id" data-theme="dark">
+<html lang="id" data-theme="<?= htmlspecialchars($app_theme) ?>">
 <head>
 <meta charset="UTF-8">
 <title>Manajemen Modul</title>
@@ -34,7 +42,15 @@ $modules = $pdo
 <link rel="stylesheet" href="../assets/vendor/pico/pico.min.css">
 
 <style>
-body { background:#0f172a; color:#e5e7eb; }
+:root {
+    --bg-page: #0f172a;
+    --text-main: #e5e7eb;
+}
+[data-theme="light"] {
+    --bg-page: #f1f5f9;
+    --text-main: #0f172a;
+}
+body { background: var(--bg-page); color: var(--text-main); }
 .table-mini { font-size:.72rem; }
 .table-mini th, .table-mini td {
     padding:.25rem .4rem;
