@@ -246,8 +246,49 @@ function val($row, $key, $default=''){
 }
 ?>
 <style>
+:root {
+  --card-bg: #0f172a;
+  --card-bd: #1f2937;
+  --text-main: #f1f5f9;
+  --text-muted: #94a3b8;
+  --input-bg: #0f172a;
+  --input-bd: #1f2937;
+}
+
+[data-theme="light"] {
+  --card-bg: #ffffff;
+  --card-bd: #cbd5e1;
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --input-bg: #ffffff;
+  --input-bd: #94a3b8;
+}
+
 .form-card{
-  border:1px solid #1f2937;border-radius:12px;padding:1rem;background:#0f172a;margin-bottom:1rem
+  border:1px solid var(--card-bd);
+  border-radius:12px;
+  padding:1.25rem;
+  background:var(--card-bg);
+  margin-bottom:1.5rem;
+  color: var(--text-main);
+}
+.form-card label {
+  color: var(--text-main);
+  font-weight: 600;
+}
+.form-card small {
+  color: var(--text-muted);
+  display: block;
+  margin-top: 0.25rem;
+}
+.form-card input, .form-card select {
+  background: var(--input-bg) !important;
+  border-color: var(--input-bd) !important;
+  color: var(--text-main) !important;
+}
+.form-card input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
 }
 .grid-2{
   display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.8rem
