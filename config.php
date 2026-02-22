@@ -18,11 +18,27 @@ $dsn  = 'mysql:host=127.0.0.1;dbname=tokoapp;charset=utf8mb4';
 $user = 'root';
 $pass = 'Banyumas11#';
 
-$pdo = new PDO($dsn, $user, $pass, [
-    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    PDO::ATTR_EMULATE_PREPARES   => false, // gunakan prepared statement native
-]);
+try {
+    // Mencoba koneksi dengan password utama
+    $pdo = new PDO($dsn, $user, $pass, [
+        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES   => false,
+    ]);
+} catch (PDOException $e) {
+    // Jika gagal (misal di PC lain), coba tanpa password (default XAMPP)
+    try {
+        $pdo = new PDO($dsn, $user, '', [
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES   => false,
+        ]);
+        // Jika berhasil tanpa password, kita biarkan $pdo terpakai
+    } catch (PDOException $e2) {
+        // Jika keduanya gagal, baru lempar error original
+        die("Fatal Error: Gagal koneksi ke database. " . $e->getMessage());
+    }
+}
 
 // Pastikan sesi MySQL ikut WIB
 // Catatan: jika server MySQL sudah di-set ke +07:00, baris ini tetap aman.

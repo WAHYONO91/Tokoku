@@ -1,0 +1,63 @@
+-- ======================================================
+-- UPDATE_SYNC.SQL (Rangkuman Perubahan Database Hari Ini)
+-- Jalankan file ini di PC lain melalui phpMyAdmin -> SQL
+-- ======================================================
+
+-- 1. TABEL BUKU KAS (CASH_LEDGER)
+CREATE TABLE IF NOT EXISTS cash_ledger (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  tanggal DATE NOT NULL,
+  shift TINYINT NULL,
+  user_id INT NULL,
+  direction ENUM('IN','OUT') NOT NULL,
+  type VARCHAR(50) NOT NULL,
+  amount BIGINT NOT NULL DEFAULT 0,
+  note VARCHAR(255) NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Tambahkan kolom note jika tabel sudah ada (untuk jaga-jaga)
+ALTER TABLE cash_ledger ADD COLUMN IF NOT EXISTS note VARCHAR(255) NULL AFTER amount;
+
+-- 2. KOLOM TAMBAHAN UNTUK PEMBELIAN (PURCHASES)
+ALTER TABLE purchases ADD COLUMN IF NOT EXISTS invoice_no VARCHAR(50) AFTER location;
+ALTER TABLE purchases ADD COLUMN IF NOT EXISTS purchase_date DATE AFTER invoice_no;
+ALTER TABLE purchases ADD COLUMN IF NOT EXISTS discount BIGINT DEFAULT 0 AFTER subtotal;
+ALTER TABLE purchases ADD COLUMN IF NOT EXISTS tax BIGINT DEFAULT 0 AFTER discount;
+ALTER TABLE purchases ADD COLUMN IF NOT EXISTS note VARCHAR(255) AFTER total;
+ALTER TABLE purchases ADD COLUMN IF NOT EXISTS created_by VARCHAR(50) AFTER note;
+
+-- 3. KOLOM TAMBAHAN UNTUK DETAIL PEMBELIAN (PURCHASE_ITEMS)
+ALTER TABLE purchase_items ADD COLUMN IF NOT EXISTS total BIGINT DEFAULT 0 AFTER harga_beli;
+ALTER TABLE purchase_items ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+
+-- 4. TABEL PIUTANG (SALES_AR)
+CREATE TABLE IF NOT EXISTS sales_ar (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  purchase_id BIGINT NOT NULL,
+  supplier_kode VARCHAR(50),
+  amount BIGINT NOT NULL DEFAULT 0,
+  due_date DATE,
+  status ENUM('OPEN','PARTIAL','PAID') DEFAULT 'OPEN',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (purchase_id) REFERENCES purchases(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 5. TABEL CICILAN PIUTANG (AR_PAYMENTS)
+CREATE TABLE IF NOT EXISTS ar_payments (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  ar_id INT NOT NULL,
+  pay_date DATE NOT NULL,
+  method VARCHAR(50),
+  amount BIGINT NOT NULL,
+  note VARCHAR(255),
+  user_id INT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (ar_id) REFERENCES sales_ar(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 6. PENYESUAIAN TIPE DATA SUPPLIER
+ALTER TABLE purchases MODIFY COLUMN supplier_kode VARCHAR(50);
