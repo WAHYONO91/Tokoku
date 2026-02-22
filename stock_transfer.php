@@ -129,7 +129,7 @@ $listStmt = $pdo->prepare($sqlList);
 $listStmt->execute($params);
 $mutasi = $listStmt->fetchAll();
 ?>
-
+<style>
   :root {
     --bg-page: #0f172a;
     --card-bg: #111827;
