@@ -172,30 +172,43 @@ if ($edit_id) {
 }
 ?>
 <style>
-    --danger:#f87171;
-    --warn:#fbbf24;
+  :root {
+    --danger: #f87171;
+    --warn: #fbbf24;
+    --input-bg: #091120;
+    --input-bd: #263243;
   }
   [data-theme="light"] {
-    --card-bg:#ffffff;
-    --card-bd:#cbd5e1;
-    --page-bg:#f1f5f9;
-    --text:#0f172a;
-    --accent:#0284c7;
-    --input-bg:#ffffff;
-    --input-bd:#94a3b8;
-    --tag-bg:#e0f2fe;
-    --tag-text:#0369a1;
-    --text-muted:#475569;
+    --card-bg: #ffffff;
+    --card-bd: #cbd5e1;
+    --page-bg: #f1f5f9;
+    --text: #0f172a;
+    --accent: #0284c7;
+    --input-bg: #ffffff;
+    --input-bd: #94a3b8;
+    --tag-bg: #e0f2fe;
+    --tag-text: #0369a1;
+    --text-muted: #475569;
   }
   [data-theme="dark"] {
     --text-muted: #94a3b8;
   }
+
+  /* Force light theme colors for inputs when data-theme="light" */
+  [data-theme="light"] input, 
+  [data-theme="light"] select,
+  [data-theme="light"] textarea {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border-color: #94a3b8 !important;
+  }
+
   .toolbar{
     display:flex;flex-wrap:wrap;gap:.5rem;margin:.6rem 0 .8rem;
     align-items:end
   }
   .toolbar label{display:flex;flex-direction:column;font-size:.85rem;color:var(--text);font-weight:600}
-  .toolbar input,.toolbar select{background:var(--input-bg, #091120);border:1px solid var(--input-bd, #263243);color:var(--text);border-radius:.45rem;padding:.45rem .55rem}
+  .toolbar input,.toolbar select{background:var(--input-bg);border:1px solid var(--input-bd);color:var(--text);border-radius:.45rem;padding:.45rem .55rem}
   .toolbar .btn{background:#1f2b3e;border:1px solid #2c3c55;color:var(--text);padding:.5rem .75rem;border-radius:.5rem;cursor:pointer}
   .toolbar a.secondary{padding:.46rem .6rem;border:1px solid #2b3952;border-radius:.45rem;color:#cbd5e1;text-decoration:none}
 
@@ -224,7 +237,7 @@ if ($edit_id) {
   .card label{font-weight:600;font-size:.85rem;color:var(--text);display:block;margin-bottom:.2rem}
 
   .card form .row{display:flex;flex-direction:column;gap:.5rem}
-  .card input,.card select{background:var(--input-bg, #091120) !important;border:1px solid var(--input-bd, #263243) !important;color:var(--text) !important;border-radius:.45rem;padding:.5rem .55rem;width:100%}
+  .card input,.card select{background:var(--input-bg) !important;border:1px solid var(--input-bd) !important;color:var(--text) !important;border-radius:.45rem;padding:.5rem .55rem;width:100%}
   .card input::placeholder { color: var(--text-muted); opacity: 0.6; }
   .btn{background:#1f2b3e;border:1px solid #2c3c55;color:var(--text);padding:.55rem .75rem;border-radius:.5rem;cursor:pointer}
   .btn:active{transform:translateY(1px)}
