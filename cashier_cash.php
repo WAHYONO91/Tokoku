@@ -177,14 +177,14 @@ if ($edit_id) {
   }
   [data-theme="light"] {
     --card-bg:#ffffff;
-    --card-bd:#e2e8f0;
-    --page-bg:#f8fafc;
+    --card-bd:#cbd5e1; /* Darker border for light theme */
+    --page-bg:#f1f5f9; /* Slightly darker page background for contrast */
     --text:#0f172a;
-    --muted:#64748b;
+    --muted:#475569;   /* Darker muted text */
     --accent:#0284c7;
     --accent-2:#059669;
     --input-bg:#ffffff;
-    --input-bd:#cbd5e1;
+    --input-bd:#94a3b8; /* More visible input border */
     --tag-bg:#e0f2fe;
     --tag-text:#0369a1;
   }
@@ -198,20 +198,21 @@ if ($edit_id) {
   .toolbar a.secondary{padding:.46rem .6rem;border:1px solid #2b3952;border-radius:.45rem;color:#cbd5e1;text-decoration:none}
 
   .pill-cards{display:grid;grid-template-columns:repeat(5,minmax(160px,1fr));gap:.6rem;margin-bottom:.8rem}
-  .pill{background:var(--card-bg);border:1px solid var(--card-bd);border-radius:.75rem;padding:.6rem .7rem}
+  .pill{background:var(--card-bg);border:1px solid var(--card-bd);border-radius:.75rem;padding:.6rem .7rem;box-shadow: 0 1px 3px rgba(0,0,0,0.05);}
   .pill .lbl{font-size:.78rem;color:var(--muted)}
-  .pill .val{font-weight:800;font-size:1.05rem}
-  .pill.accent .val{color:#93c5fd}
-  .pill.out .val{color:#fca5a5}
+  .pill .val{font-weight:800;font-size:1.05rem;color:var(--text)}
+  .pill.accent .val{color:var(--accent)}
+  .pill.out .val{color:#ef4444}
 
   .saldo-sticky{
     position:sticky;top:.5rem;z-index:1;
-    background:linear-gradient(180deg, var(--card-bg), var(--page-bg));
+    background:var(--card-bg);
     border:1px solid var(--card-bd);border-radius:.7rem;
-    padding:.55rem .75rem;margin-bottom:.8rem;display:flex;justify-content:space-between;align-items:center
+    padding:.75rem 1rem;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
   }
   [data-theme="dark"] .saldo-sticky { background:linear-gradient(180deg,#0b1220,#0e1726); }
-  .saldo-sticky .val{font-family:ui-monospace,Consolas,Menlo,monospace;font-size:1.5rem;font-weight:900;color:var(--accent)}
+  .saldo-sticky .val{font-family:ui-monospace,Consolas,Menlo,monospace;font-size:1.6rem;font-weight:900;color:var(--accent)}
 
   .grid-forms{
     display:grid;grid-template-columns:repeat(3,minmax(260px,1fr));gap:.8rem;margin-bottom:1rem
