@@ -172,17 +172,17 @@ if ($edit_id) {
 }
 ?>
 <style>
-  :root{
-    --gap:.75rem;
-    --card-bg:#0e1726;
-    --card-bd:#1f2a3a;
-    --page-bg:#0b1220;
-    --text:#e2e8f0;
-    --muted:#9bb0c9;
-    --accent:#7dd3fc;
-    --accent-2:#34d399;
     --danger:#f87171;
     --warn:#fbbf24;
+  }
+  [data-theme="light"] {
+    --card-bg:#ffffff;
+    --card-bd:#e2e8f0;
+    --page-bg:#f8fafc;
+    --text:#0f172a;
+    --muted:#64748b;
+    --accent:#0284c7;
+    --accent-2:#059669;
   }
   .toolbar{
     display:flex;flex-wrap:wrap;gap:.5rem;margin:.6rem 0 .8rem;
@@ -225,9 +225,11 @@ if ($edit_id) {
   .table-wrap{overflow:auto;border-radius:.6rem;border:1px solid var(--card-bd)}
   table{width:100%;border-collapse:collapse;font-size:.9rem;min-width:980px}
   th,td{border-bottom:1px solid #223047;padding:.55rem .6rem}
-  thead th{position:sticky;top:0;background:#0f1a2c;z-index:1}
-  tbody tr:nth-child(odd){background:#0b1324}
-  tbody tr:hover{background:#0b1a34}
+  thead th{position:sticky;top:0;background:var(--card-bg);z-index:1}
+  tbody tr:nth-child(odd){background:rgba(0,0,0,0.02)}
+  [data-theme="dark"] tbody tr:nth-child(odd){background:#0b1324}
+  tbody tr:hover{background:rgba(0,0,0,0.05)}
+  [data-theme="dark"] tbody tr:hover{background:#0b1a34}
   .right{text-align:right}
   .no-print{ }
 
