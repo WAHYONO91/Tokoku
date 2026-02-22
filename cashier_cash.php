@@ -180,19 +180,20 @@ if ($edit_id) {
     --card-bd:#cbd5e1; /* Darker border for light theme */
     --page-bg:#f1f5f9; /* Slightly darker page background for contrast */
     --text:#0f172a;
-    --muted:#475569;   /* Darker muted text */
     --accent:#0284c7;
-    --accent-2:#059669;
-    --input-bg:#ffffff;
-    --input-bd:#94a3b8; /* More visible input border */
+    --input-bd:#94a3b8;
     --tag-bg:#e0f2fe;
     --tag-text:#0369a1;
+    --text-muted:#475569; /* Darker muted text for light theme */
+  }
+  [data-theme="dark"] {
+    --text-muted: #94a3b8;
   }
   .toolbar{
     display:flex;flex-wrap:wrap;gap:.5rem;margin:.6rem 0 .8rem;
     align-items:end
   }
-  .toolbar label{display:flex;flex-direction:column;font-size:.8rem;color:var(--muted)}
+  .toolbar label{display:flex;flex-direction:column;font-size:.85rem;color:var(--text);font-weight:600}
   .toolbar input,.toolbar select{background:var(--input-bg, #091120);border:1px solid var(--input-bd, #263243);color:var(--text);border-radius:.45rem;padding:.45rem .55rem}
   .toolbar .btn{background:#1f2b3e;border:1px solid #2c3c55;color:var(--text);padding:.5rem .75rem;border-radius:.5rem;cursor:pointer}
   .toolbar a.secondary{padding:.46rem .6rem;border:1px solid #2b3952;border-radius:.45rem;color:#cbd5e1;text-decoration:none}
@@ -217,11 +218,13 @@ if ($edit_id) {
   .grid-forms{
     display:grid;grid-template-columns:repeat(3,minmax(260px,1fr));gap:.8rem;margin-bottom:1rem
   }
-  .card{background:var(--card-bg);border:1px solid var(--card-bd);border-radius:.7rem;padding:.75rem}
-  .muted{font-size:.8rem;color:var(--muted)}
+  .card{background:var(--card-bg);border:1px solid var(--card-bd);border-radius:.7rem;padding:.75rem;box-shadow: 0 1px 2px rgba(0,0,0,0.05);}
+  .muted{font-size:.8rem;color:var(--text-muted)}
+  .card label{font-weight:600;font-size:.85rem;color:var(--text);display:block;margin-bottom:.2rem}
 
-  .card form .row{display:flex;flex-direction:column;gap:.35rem}
-  .card input,.card select{background:var(--input-bg, #091120);border:1px solid var(--input-bd, #263243);color:var(--text);border-radius:.45rem;padding:.5rem .55rem;width:100%}
+  .card form .row{display:flex;flex-direction:column;gap:.5rem}
+  .card input,.card select{background:var(--input-bg, #091120) !important;border:1px solid var(--input-bd, #263243) !important;color:var(--text) !important;border-radius:.45rem;padding:.5rem .55rem;width:100%}
+  .card input::placeholder { color: var(--text-muted); opacity: 0.6; }
   .btn{background:#1f2b3e;border:1px solid #2c3c55;color:var(--text);padding:.55rem .75rem;border-radius:.5rem;cursor:pointer}
   .btn:active{transform:translateY(1px)}
   .btn.danger{background:#3b1f25;border-color:#5b2830}
