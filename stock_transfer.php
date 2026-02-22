@@ -130,11 +130,32 @@ $listStmt->execute($params);
 $mutasi = $listStmt->fetchAll();
 ?>
 
-<style>
+  :root {
+    --bg-page: #0f172a;
+    --card-bg: #111827;
+    --card-bd: #1f2937;
+    --text-main: #e2e8f0;
+    --text-muted: #94a3b8;
+    --bg-modal: #020617;
+    --bg-input: #0f172a;
+    --btn-secondary: #111827;
+  }
+  [data-theme="light"] {
+    --bg-page: #f1f5f9;
+    --card-bg: #ffffff;
+    --card-bd: #cbd5e1;
+    --text-main: #0f172a;
+    --text-muted: #475569;
+    --bg-modal: #ffffff;
+    --bg-input: #ffffff;
+    --btn-secondary: #f8fafc;
+  }
+
   .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:.7rem; }
-  .form-card{border:1px solid #1f2937; border-radius:12px; padding:1rem; background:#0f172a; margin-bottom:1rem;}
-  .table-small{ width:100%; border-collapse:collapse; font-size:.82rem;}
-  .table-small th,.table-small td{ border:1px solid #1f2937; padding:.4rem .5rem; }
+  .form-card{border:1px solid var(--card-bd); border-radius:12px; padding:1rem; background:var(--card-bg); margin-bottom:1rem; color:var(--text-main);}
+  .form-card label { color: var(--text-main); font-weight: 600; }
+  .table-small{ width:100%; border-collapse:collapse; font-size:.82rem; color:var(--text-main);}
+  .table-small th,.table-small td{ border:1px solid var(--card-bd); padding:.4rem .5rem; }
   .right{text-align:right}
   .toolbar{ display:flex; gap:.5rem; flex-wrap:wrap; margin:.6rem 0; }
 
@@ -144,16 +165,16 @@ $mutasi = $listStmt->fetchAll();
   #batchWrap{
     max-height: 220px;       /* tinggi kotak daftar (atas-bawah) */
     overflow: auto;
-    border:1px solid #1f2937;
+    border:1px solid var(--card-bd);
     border-radius:.6rem;
-    background:#020617;
+    background:var(--bg-modal);
     margin-top:.5rem;
   }
   #batchTable thead th{
     position: sticky;
     top: 0;
     z-index: 2;
-    background:#0b1220;
+    background:var(--card-bg);
   }
 
   /* =========================
@@ -195,35 +216,36 @@ $mutasi = $listStmt->fetchAll();
   }
   .modal-card{
     width:min(960px, 96vw);
-    background:#020617;
+    background:var(--bg-modal);
     border-radius:.75rem;
-    border:1px solid #1e293b;
+    border:1px solid var(--card-bd);
     box-shadow:0 20px 60px rgba(0,0,0,.75);
     overflow:hidden;
     display:flex; flex-direction:column;
     max-height:80vh;
+    color: var(--text-main);
   }
   .modal-header{
     padding:.75rem 1rem;
-    border-bottom:1px solid #1f2937;
+    border-bottom:1px solid var(--card-bd);
     display:flex; align-items:center; gap:.75rem;
   }
-  .modal-header h3{ margin:0; font-size:.95rem; font-weight:600; }
-  .modal-header small{ font-size:.75rem; color:#9bb0c9; }
+  .modal-header h3{ margin:0; font-size:.95rem; font-weight:600; color:var(--text-main);}
+  .modal-header small{ font-size:.75rem; color:var(--text-muted); }
   .modal-header input{
     flex:1; font-size:.95rem;
     padding:.5rem .65rem;
     border-radius:.5rem;
-    border:1px solid #283548;
-    background:#020617;
-    color:#e2e8f0;
+    border:1px solid var(--card-bd);
+    background:var(--bg-input);
+    color:var(--text-main);
   }
   .modal-header button{
     padding:.45rem .75rem;
     border-radius:.45rem;
-    border:1px solid #374151;
-    background:#111827;
-    color:#e2e8f0;
+    border:1px solid var(--card-bd);
+    background:var(--btn-secondary);
+    color:var(--text-main);
     cursor:pointer;
     font-size:.85rem;
   }
@@ -244,18 +266,20 @@ $mutasi = $listStmt->fetchAll();
     font-size:.88rem;
   }
   #itemSearchTable th,#itemSearchTable td{
-    border:1px solid #1f2937;
+    border:1px solid var(--card-bd);
     padding:.35rem .45rem;
     white-space:nowrap;
   }
   #itemSearchTable th{
-    background:#020617;
+    background:var(--bg-modal);
     position:sticky;
     top:0;
     z-index:1;
   }
-  #itemSearchTable tbody tr:nth-child(odd){ background:#020814; }
-  #itemSearchTable tbody tr:hover{ background:#0b162a; cursor:pointer; }
+  #itemSearchTable tbody tr:nth-child(odd){ background:rgba(0,0,0,0.02); }
+  [data-theme="dark"] #itemSearchTable tbody tr:nth-child(odd){ background:#020814; }
+  #itemSearchTable tbody tr:hover{ background:rgba(0,0,0,0.05); cursor:pointer; }
+  [data-theme="dark"] #itemSearchTable tbody tr:hover{ background:#0b162a; }
 </style>
 
 <article>
@@ -318,7 +342,7 @@ $mutasi = $listStmt->fetchAll();
     <div style="margin-top:.9rem">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap;">
         <strong>Daftar Barang yang Akan Dimutasi</strong>
-        <button type="button" id="btnClearBatch" style="padding:.35rem .6rem;border-radius:.45rem;border:1px solid #374151;background:#111827;color:#e2e8f0;cursor:pointer;">
+        <button type="button" id="btnClearBatch" style="padding:.35rem .6rem;border-radius:.45rem;border:1px solid var(--card-bd);background:var(--btn-secondary);color:var(--text-main);cursor:pointer;">
           Hapus Semua
         </button>
       </div>
@@ -464,12 +488,13 @@ $mutasi = $listStmt->fetchAll();
   stockBox.id = 'stockInfo';
   stockBox.style.marginTop = '.35rem';
   stockBox.style.fontSize = '.82rem';
-  stockBox.style.color = '#9ca3af';
-  stockBox.style.lineHeight = '1.35';
+  stockBox.style.color = 'var(--text-muted)';
+  stockBox.style.lineHeight = '1.45';
+  stockBox.style.fontWeight = '600';
   stockBox.innerHTML = `
     <div>Stok Gudang: - | Stok Toko: -</div>
     <div>Stok Asal: - | Stok Tujuan: - | Sisa Setelah Mutasi: -</div>
-    <div id="stockWarn" style="margin-top:.25rem;color:#fca5a5;display:none;">
+    <div id="stockWarn" style="margin-top:.25rem;color:#ef4444;display:none;font-weight:700;">
       Qty melebihi stok lokasi asal.
     </div>
   `;

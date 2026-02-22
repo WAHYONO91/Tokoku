@@ -105,6 +105,11 @@ function pill_link($label, $key, $active, $from, $to, $q, $count, $clsExtra=''){
   :root{
     --bg:#0b1220; --card:#0e1726; --bd:#1f2a3a; --txt:#e2e8f0; --muted:#9bb0c9;
     --accent:#7dd3fc; --ok:#10b981; --retur:#f59e0b; --batal:#ef4444;
+    --input-bg:#091120; --input-bd:#263243;
+  }
+  [data-theme="light"] {
+    --bg:#f1f5f9; --card:#ffffff; --bd:#cbd5e1; --txt:#0f172a; --muted:#475569;
+    --accent:#0284c7; --input-bg:#ffffff; --input-bd:#94a3b8;
   }
   article{padding:.5rem .2rem}
   h3{margin:.2rem 0 .6rem;font-size:1.05rem}
@@ -112,9 +117,9 @@ function pill_link($label, $key, $active, $from, $to, $q, $count, $clsExtra=''){
   .toolbar{
     display:flex;flex-wrap:wrap;gap:.6rem;margin:.4rem 0 .9rem;align-items:end
   }
-  .toolbar label{display:flex;flex-direction:column;font-size:.82rem;color:var(--muted)}
+  .toolbar label{display:flex;flex-direction:column;font-size:.85rem;color:var(--txt);font-weight:600}
   .toolbar input,.toolbar select{
-    background:#091120;border:1px solid #263243;color:var(--txt);
+    background:var(--input-bg);border:1px solid var(--input-bd);color:var(--txt);
     border-radius:.45rem;padding:.46rem .55rem;min-width:12ch
   }
   .toolbar button,.toolbar a.secondary{
@@ -126,35 +131,41 @@ function pill_link($label, $key, $active, $from, $to, $q, $count, $clsExtra=''){
   .pill{
     display:inline-flex;align-items:center;gap:.45rem;
     background:var(--card);border:1px solid var(--bd);border-radius:999px;
-    padding:.35rem .7rem;text-decoration:none;color:#cfe4ff;font-size:.86rem
+    padding:.35rem .7rem;text-decoration:none;color:var(--txt);font-size:.86rem
   }
   .pill .dot{width:.5rem;height:.5rem;border-radius:999px;background:#64748b;display:inline-block}
-  .pill.active{background:#12223b;border-color:#375986;color:#fff}
+  .pill.active{background:var(--accent);border-color:var(--accent);color:#fff}
+  [data-theme="dark"] .pill.active{background:#12223b;border-color:#375986;}
   .pill.ok   .dot{background:var(--ok)}
   .pill.retur .dot{background:var(--retur)}
   .pill.batal .dot{background:var(--batal)}
   .pill .badge{
-    background:#10233a;border:1px solid #2b3952;border-radius:999px;
-    padding:.02rem .4rem;font-size:.72rem;color:#9dd0ff
+    background:var(--bg);border:1px solid var(--bd);border-radius:999px;
+    padding:.02rem .4rem;font-size:.72rem;color:var(--txt)
   }
 
   .info{opacity:.85;margin:.25rem 0 .7rem}
 
   .table-wrap{overflow:auto;border:1px solid var(--bd);border-radius:.6rem}
   table{width:100%;border-collapse:collapse;font-size:.92rem;min-width:980px}
-  th,td{padding:.6rem .7rem;border-bottom:1px solid #223047}
-  thead th{position:sticky;top:0;background:#0f1a2c;z-index:1}
-  tbody tr:nth-child(odd){background:#0b1324}
-  tbody tr:hover{background:#0b1a34}
+  th,td{padding:.6rem .7rem;border-bottom:1px solid var(--bd)}
+  thead th{position:sticky;top:0;background:var(--bg);z-index:1}
+  tbody tr:nth-child(odd){background:rgba(0,0,0,0.02)}
+  [data-theme="dark"] tbody tr:nth-child(odd){background:#0b1324}
+  tbody tr:hover{background:rgba(0,0,0,0.05)}
+  [data-theme="dark"] tbody tr:hover{background:#0b1a34}
   .right{text-align:right}
 
   .status{
     font-size:.78rem;display:inline-flex;align-items:center;gap:.35rem;
-    padding:.1rem .45rem;border-radius:.45rem;border:1px solid #2b3952;background:#0c1424
+    padding:.1rem .45rem;border-radius:.45rem;border:1px solid var(--bd);background:var(--card)
   }
-  .status.ok{color:#a7f3d0;border-color:#194a3b;background:#0c1e1a}
-  .status.retur{color:#fde68a;border-color:#5a471c;background:#1b1608}
-  .status.batal{color:#fecaca;border-color:#5c1f28;background:#1f0c12}
+  .status.ok{color:#059669;background:#dbfde6;border-color:#a7f3d0}
+  .status.retur{color:#92400e;background:#fef3c7;border-color:#fde68a}
+  .status.batal{color:#991b1b;background:#fee2e2;border-color:#fecaca}
+  [data-theme="dark"] .status.ok{color:#a7f3d0;border-color:#194a3b;background:#0c1e1a}
+  [data-theme="dark"] .status.retur{color:#fde68a;border-color:#5a471c;background:#1b1608}
+  [data-theme="dark"] .status.batal{color:#fecaca;border-color:#5c1f28;background:#1f0c12}
 
   .btn-inline{
     display:inline-flex;align-items:center;gap:.35rem;
