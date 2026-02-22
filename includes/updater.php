@@ -80,8 +80,8 @@ class MigrationManager {
             return false;
         }
 
-        // Jalankan git pull
-        $cmd = "$gitPath pull origin main 2>&1";
+        // Jalankan git pull dengan konfig safe.directory sementara untuk menghindari error ownership
+        $cmd = "$gitPath -c safe.directory=* pull origin main 2>&1";
         $output = shell_exec($cmd);
         
         if ($output) {
