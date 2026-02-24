@@ -220,6 +220,20 @@ try {
             WHERE kode = ?
         ");
         $up->execute([$delta, $member_kode]);
+
+        // LOG PENUKARAN POIN (Jika ada poin yang ditukar)
+        if ($poin_ditukar > 0) {
+            $insRedeem = $pdo->prepare("
+                INSERT INTO member_point_redemptions (member_kode, qty, description, redeemed_at, created_by)
+                VALUES (?, ?, ?, NOW(), ?)
+            ");
+            $insRedeem->execute([
+                $member_kode,
+                $poin_ditukar,
+                "Penukaran poin POS (Invoice: $invoice_no)",
+                $user
+            ]);
+        }
     }
 
     // INSERT PIUTANG
