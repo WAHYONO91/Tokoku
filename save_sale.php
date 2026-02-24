@@ -194,8 +194,8 @@ try {
 
     // SALE ITEMS + STOK
     $stmtItem = $pdo->prepare("
-        INSERT INTO sale_items (sale_id, item_kode, nama, qty, harga, total)
-        VALUES (?,?,?,?,?,?)
+        INSERT INTO sale_items (sale_id, item_kode, nama, qty, level, harga, total)
+        VALUES (?,?,?,?,?,?,?)
     ");
 
     foreach ($items as $it) {
@@ -204,10 +204,11 @@ try {
 
         $nama  = (string)($it['nama'] ?? '');
         $qty   = max(1, (int)($it['qty'] ?? 0));
+        $lvl   = max(1, min(4, (int)($it['level'] ?? 1)));
         $harga = max(0, (int)($it['harga'] ?? 0));
         $line_total = $qty * $harga;
 
-        $stmtItem->execute([$sale_id, $kode, $nama, $qty, $harga, $line_total]);
+        $stmtItem->execute([$sale_id, $kode, $nama, $qty, $lvl, $harga, $line_total]);
         adjust_stock($pdo, $kode, $location, -$qty);
     }
 
