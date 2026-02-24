@@ -27,6 +27,32 @@ try {
 }
 ?>
 <style>
+:root {
+  <?php if ($app_theme === 'light'): ?>
+  --table-bg: #ffffff;
+  --table-header-bg: #f1f5f9;
+  --table-border: #e2e8f0;
+  --table-text: #000000;
+  --table-row-even: #f8fafc;
+  --table-row-hover: #f1f5f9;
+  --table-input-bg: #ffffff;
+  --table-input-border: #cbd5e1;
+  --table-input-text: #000000;
+  --table-muted: #64748b;
+  <?php else: ?>
+  --table-bg: #020617;
+  --table-header-bg: #0f172a;
+  --table-border: #1e293b;
+  --table-text: #f8fafc;
+  --table-row-even: #020814;
+  --table-row-hover: rgba(30, 41, 59, 0.6);
+  --table-input-bg: #0f172a;
+  --table-input-border: #334155;
+  --table-input-text: #f8fafc;
+  --table-muted: #94a3b8;
+  <?php endif; ?>
+}
+
 /* === POPUP PENCARIAN BARANG (F2) === */
 .modal-hidden{display:none;}
 .modal-overlay{
@@ -35,58 +61,122 @@ try {
   padding-top:80px; z-index:120;
 }
 .modal-card{
-  width:min(960px, 96vw); background:#020617; border-radius:.75rem;
-  border:1px solid #1e293b; box-shadow:0 20px 60px rgba(0,0,0,.75);
+  width:min(960px, 96vw); background:var(--table-bg); border-radius:.75rem;
+  border:1px solid var(--table-border); box-shadow:0 20px 60px rgba(0,0,0,.75);
   overflow:hidden; display:flex; flex-direction:column; max-height:80vh;
-  color:#e5e7eb; font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  color:var(--table-text); font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
 }
 .modal-header{
-  padding:.75rem 1rem; border-bottom:1px solid #1f2937;
+  padding:.75rem 1rem; border-bottom:1px solid var(--table-border);
   display:flex; align-items:center; gap:.75rem;
 }
 .modal-header h3{margin:0;font-size:.95rem;font-weight:600;}
-.modal-header small{font-size:.75rem;color:#9ca3af;}
+.modal-header small{font-size:.75rem;color:var(--table-muted);}
 .modal-header input{
   flex:1;font-size:.95rem;padding:.5rem .65rem;border-radius:.5rem;
-  border:1px solid #283548;background:#020617;color:#e5e7eb;
+  border:1px solid var(--table-input-border);background:var(--table-input-bg);color:var(--table-input-text);
 }
 .modal-header button{
-  padding:.45rem .75rem;border-radius:.45rem;border:1px solid #374151;
-  background:#111827;color:#e5e7eb;cursor:pointer;font-size:.85rem;
+  padding:.45rem .75rem;border-radius:.45rem;border:1px solid var(--table-input-border);
+  background:var(--table-header-bg);color:var(--table-text);cursor:pointer;font-size:.85rem;
 }
 .modal-header button:active{transform:translateY(1px);}
 .modal-body{padding:.4rem 1rem 1rem;overflow:auto;}
 #itemSearchTable{
-  width:100%;border-collapse:collapse;font-size:.88rem;
+  width:100%;border-collapse:collapse;font-size:.82rem;
 }
 #itemSearchTable th,#itemSearchTable td{
-  border:1px solid #1f2937;padding:.35rem .45rem;white-space:nowrap;
+  border:1px solid var(--table-border);padding:.3rem .4rem;white-space:nowrap;
 }
 #itemSearchTable th{
-  background:#020617;position:sticky;top:0;z-index:1;
+  background:var(--table-header-bg);position:sticky;top:0;z-index:1;color:var(--table-text);
 }
-#itemSearchTable tbody tr:nth-child(odd){background:#020814;}
-#itemSearchTable tbody tr:nth-child(even){background:#020617;}
-#itemSearchTable tbody tr:hover{background:#0b162a;cursor:pointer;}
+#itemSearchTable tbody tr:nth-child(odd){background:var(--table-bg);}
+#itemSearchTable tbody tr:nth-child(even){background:var(--table-row-even);}
+#itemSearchTable tbody tr:hover{background:var(--table-row-hover);cursor:pointer;}
 .modal-footer{
-  padding:.5rem 1rem .7rem;border-top:1px solid #111827;font-size:.75rem;
-  color:#9ca3af;display:flex;justify-content:space-between;gap:.5rem;
+  padding:.5rem 1rem .7rem;border-top:1px solid var(--table-border);font-size:.75rem;
+  color:var(--table-muted);display:flex;justify-content:space-between;gap:.5rem;
 }
 
 /* =========================================================
    PENYESUAIAN: TABEL PEMBELIAN SCROLL + FOKUS INPUT TERBARU
    ========================================================= */
 .table-scroll{
-  max-height:55vh;            /* tinggi tabel. ubah kalau mau */
+  max-height:65vh;            
   overflow-y:auto;
-  border:1px solid #1f2937;
-  border-radius:.6rem;
+  border:1px solid var(--table-border);
+  border-radius:.5rem;
+  background: var(--table-bg);
 }
 .table-scroll thead th{
   position:sticky;
   top:0;
-  z-index:2;
-  background:#0f172a;
+  z-index:10;
+  background:var(--table-header-bg);
+  color: var(--table-text);
+  font-size: .75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: .4rem .35rem;
+  border-bottom: 2px solid var(--table-border);
+}
+#purchaseTable{
+  font-size: .78rem;
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+}
+#purchaseTable td{
+  padding: .22rem .35rem;
+  border-bottom: 1px solid var(--table-border);
+  vertical-align: middle;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--table-text);
+}
+#purchaseTable tr:nth-child(even){ background: var(--table-row-even); }
+#purchaseTable tr:hover td{ background: var(--table-row-hover); }
+
+.compact-input{
+  font-size: .78rem !important;
+  padding: .15rem .3rem !important;
+  border-radius: .25rem !important;
+  border: 1px solid var(--table-input-border) !important;
+  background: var(--table-input-bg) !important;
+  color: var(--table-input-text) !important;
+  margin: 0 !important;
+  line-height: 1 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  font-variant-numeric: tabular-nums;
+}
+.compact-input:focus{
+  border-color: #3b82f6 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 1px #3b82f6 !important;
+}
+.hb-prev{
+  font-size: .65rem;
+  color: var(--table-muted);
+  display: block;
+  margin-top: 0;
+  line-height: 1;
+}
+#purchaseTable tfoot th{
+  background: var(--table-header-bg);
+  color: var(--table-text);
+  padding: .3rem .4rem;
+  border-top: 2px solid var(--table-border);
+  font-size: .78rem;
+}
+#purchaseTable tfoot tr:last-child th{ border-bottom-left-radius: .5rem; border-bottom-right-radius: .5rem; }
+.new-row-flash {
+  animation: flash-bg 1.2s ease-out;
+}
+@keyframes flash-bg {
+  0% { background-color: rgba(59, 130, 246, 0.3); }
+  100% { background-color: transparent; }
 }
 </style>
 
@@ -121,7 +211,7 @@ try {
       </label>
     </div>
 
-    <article style="background:rgba(15,23,42,.3);">
+    <article style="background:var(--table-row-hover); border:1px solid var(--table-border);">
       <header>Scan / Ketik Barcode / Nama Barang lalu Enter (F2 untuk cari barang)</header>
       <input
         id="barcode"
@@ -159,17 +249,17 @@ try {
       <table class="table-small" id="purchaseTable" style="margin:0;">
         <thead>
           <tr>
-            <th>Kode</th>
-            <th>Nama</th>
-            <th>Satuan</th>
-            <th class="right">Qty</th>
-            <th class="right">Harga Beli</th>
-            <th class="right">HJ1</th>
-            <th class="right">HJ2</th>
-            <th class="right">HJ3</th>
-            <th class="right">HJ4</th>
-            <th class="right">Total</th>
-            <th class="no-print">Aksi</th>
+            <th style="width:120px;">Kode</th>
+            <th>Nama Barang</th>
+            <th style="width:70px;">Satuan</th>
+            <th class="right" style="width:70px;">Qty</th>
+            <th class="right" style="width:110px;">H.Beli</th>
+            <th class="right" style="width:110px;">HJ 1</th>
+            <th class="right" style="width:110px;">HJ 2</th>
+            <th class="right" style="width:110px;">HJ 3</th>
+            <th class="right" style="width:110px;">HJ 4</th>
+            <th class="right" style="width:120px;">Total</th>
+            <th class="no-print" style="width:60px;">Aksi</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -302,7 +392,7 @@ const pendingQtyInfo = document.createElement('div');
 pendingQtyInfo.id = 'pendingQtyInfo';
 pendingQtyInfo.style.marginTop = '.35rem';
 pendingQtyInfo.style.fontSize = '.8rem';
-pendingQtyInfo.style.color = 'black';
+pendingQtyInfo.style.color = 'var(--table-text)';
 pendingQtyInfo.textContent = 'Qty input berikutnya: 1 (tekan F7)';
 if (barcodeEl) {
   barcodeEl.insertAdjacentElement('afterend', pendingQtyInfo);
@@ -315,7 +405,7 @@ const stockInfo = document.createElement('div');
 stockInfo.id = 'stockInfo';
 stockInfo.style.marginTop = '.2rem';
 stockInfo.style.fontSize = '.8rem';
-stockInfo.style.color = 'black';
+stockInfo.style.color = 'var(--table-text)';
 stockInfo.textContent = 'Stok Gudang: - | Stok Toko: -';
 
 if (barcodeEl) {
@@ -400,6 +490,7 @@ barcodeEl.addEventListener('keypress', async (e)=>{
         );
 
         const existingIdx = rows.findIndex(r => r.kode === item.kode);
+        let targetIdx = existingIdx;
         if (existingIdx >= 0) {
           rows[existingIdx].qty += addQty;
         } else {
@@ -426,9 +517,10 @@ barcodeEl.addEventListener('keypress', async (e)=>{
           };
 
           rows.push(newRow);
+          targetIdx = rows.length - 1;
         }
 
-        renderRows();
+        renderRows(targetIdx);
 
         // setelah dipakai, reset qty item berikutnya kembali 1
         setPendingQty(1);
@@ -448,7 +540,7 @@ barcodeEl.addEventListener('keypress', async (e)=>{
   }
 });
 
-function renderRows(){
+function renderRows(highlightIdx = -1){
   tbody.innerHTML = '';
   let subtotal = 0;
 
@@ -457,34 +549,36 @@ function renderRows(){
     subtotal += lineTotal;
 
     const tr = document.createElement('tr');
+    tr.id = `row-${idx}`;
+    if (idx === highlightIdx) {
+      tr.classList.add('new-row-flash');
+    }
     tr.innerHTML = `
-      <td>${r.kode}</td>
-      <td>${r.nama}</td>
-      <td>${r.unit}</td>
+      <td style="color:var(--table-muted); font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;">${r.kode}</td>
+      <td style="font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px;">${r.nama}</td>
+      <td style="color:var(--table-muted);">${r.unit}</td>
       <td class="right">
-        <input type="number" min="1" value="${r.qty}" data-idx="${idx}" class="qtyInput" style="width:4.5rem;">
+        <input type="number" min="1" value="${r.qty}" data-idx="${idx}" class="qtyInput compact-input" style="width:100%; text-align:center;">
       </td>
       <td class="right">
-        <input type="number" min="0" value="${r.harga_beli}" data-idx="${idx}" class="hbeliInput" style="width:6.5rem;">
-        <div class="muted" style="font-size:.75rem;">
-          HB sebelumnya: ${ r.harga_beli_last ? formatID(r.harga_beli_last) : '-' }
-        </div>
+        <input type="number" min="0" value="${r.harga_beli}" data-idx="${idx}" class="hbeliInput compact-input" style="width:100%; text-align:right;">
+        <span class="hb-prev">Prev: ${ r.harga_beli_last ? formatID(r.harga_beli_last) : '-' }</span>
       </td>
       <td class="right">
-        <input type="number" min="0" value="${r.harga_jual1}" data-idx="${idx}" class="hjual1Input" style="width:6.5rem;">
+        <input type="number" min="0" value="${r.harga_jual1}" data-idx="${idx}" class="hjual1Input compact-input" style="width:100%; text-align:right;">
       </td>
       <td class="right">
-        <input type="number" min="0" value="${r.harga_jual2}" data-idx="${idx}" class="hjual2Input" style="width:6.5rem;">
+        <input type="number" min="0" value="${r.harga_jual2}" data-idx="${idx}" class="hjual2Input compact-input" style="width:100%; text-align:right;">
       </td>
       <td class="right">
-        <input type="number" min="0" value="${r.harga_jual3}" data-idx="${idx}" class="hjual3Input" style="width:6.5rem;">
+        <input type="number" min="0" value="${r.harga_jual3}" data-idx="${idx}" class="hjual3Input compact-input" style="width:100%; text-align:right;">
       </td>
       <td class="right">
-        <input type="number" min="0" value="${r.harga_jual4}" data-idx="${idx}" class="hjual4Input" style="width:6.5rem;">
+        <input type="number" min="0" value="${r.harga_jual4}" data-idx="${idx}" class="hjual4Input compact-input" style="width:100%; text-align:right;">
       </td>
-      <td class="right lineTotalCell">${formatID(lineTotal)}</td>
-      <td class="no-print">
-        <button type="button" data-idx="${idx}" class="delBtn">Hapus</button>
+      <td class="right lineTotalCell" style="font-weight:600; font-family:ui-monospace,monospace; font-variant-numeric: tabular-nums;">${formatID(lineTotal)}</td>
+      <td class="no-print" style="text-align:center;">
+        <button type="button" data-idx="${idx}" class="delBtn" style="padding:.1rem .35rem; font-size:.7rem; background:#450a0a; border-color:#991b1b; color:#fca5a5; border-radius:.25rem;">✕</button>
       </td>
     `;
     tbody.appendChild(tr);
@@ -494,15 +588,31 @@ function renderRows(){
   bindRowEvents();
 
   // =======================================================
-  // PENYESUAIAN: auto scroll ke item terbaru + fokus input
+  // PENYESUAIAN: auto scroll ke item terbaru + fokus input kolom
   // =======================================================
-  if (tableScrollWrap) {
-    tableScrollWrap.scrollTop = tableScrollWrap.scrollHeight;
-  }
-  if (barcodeEl) {
+  // =======================================================
+  // PENYESUAIAN: scroll ke row yang di-highlight + fokus
+  // =======================================================
+  if (highlightIdx >= 0) {
+    const targetRow = document.getElementById(`row-${highlightIdx}`);
+    if (targetRow) {
+      targetRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    
+    const targetInput = document.querySelector(`.qtyInput[data-idx="${highlightIdx}"]`);
+    if (targetInput) {
+      setTimeout(() => {
+        targetInput.focus();
+        if (targetInput.select) targetInput.select();
+      }, 50); // slight delay to ensure scroll finished
+    }
+  } else if (barcodeEl) {
+    if (tableScrollWrap) {
+      tableScrollWrap.scrollTop = tableScrollWrap.scrollHeight;
+    }
     setTimeout(() => {
       barcodeEl.focus();
-      barcodeEl.select && barcodeEl.select();
+      if (barcodeEl.select) barcodeEl.select();
     }, 0);
   }
 }
@@ -596,6 +706,24 @@ function bindRowEvents(){
           if (target) {
             target.focus();
             if (typeof target.select === 'function') target.select();
+          }
+          return;
+        }
+
+        // Enter: pindah ke kolom kanan, atau balik ke barcode jika di kolom terakhir
+        if (e.key === 'Enter') {
+          const nextCol = colIndex + 1;
+          if (nextCol < navSelectors.length) {
+            const targetSel = navSelectors[nextCol];
+            const target = document.querySelector(targetSel + '[data-idx="'+idx+'"]');
+            if (target) {
+              e.preventDefault();
+              target.focus();
+              if (typeof target.select === 'function') target.select();
+            }
+          } else {
+            e.preventDefault();
+            focusBarcode();
           }
           return;
         }
