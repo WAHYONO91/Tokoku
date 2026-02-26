@@ -501,6 +501,8 @@ barcodeEl.addEventListener('keypress', async (e)=>{
           const newRow = {
             kode: item.kode,
             nama: item.nama,
+            stok_gudang: parseInt(item.stok_gudang || '0', 10),
+            stok_toko: parseInt(item.stok_toko || '0', 10),
             unit: item.unit || item.unit_code || 'pcs',
             qty: addQty,
             harga_beli: parseInt(item.harga_beli || '0', 10),
@@ -555,7 +557,12 @@ function renderRows(highlightIdx = -1){
     }
     tr.innerHTML = `
       <td style="color:var(--table-muted); font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;">${r.kode}</td>
-      <td style="font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px;">${r.nama}</td>
+      <td style="font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px;">
+        ${r.nama}
+        <div style="font-size: .7rem; color: var(--table-muted); font-weight: normal; margin-top: 2px;">
+          Gudang: ${formatID(r.stok_gudang)} | Toko: ${formatID(r.stok_toko)}
+        </div>
+      </td>
       <td style="color:var(--table-muted);">${r.unit}</td>
       <td class="right">
         <input type="number" min="1" value="${r.qty}" data-idx="${idx}" class="qtyInput compact-input" style="width:100%; text-align:center;">
