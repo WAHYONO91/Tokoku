@@ -13,6 +13,7 @@ require_access('REPORT_SALES');
 $setting = $pdo->query("
   SELECT 
     store_name,
+    theme,
 
     -- earning points (threshold)
     points_per_rupiah,
@@ -27,6 +28,8 @@ $setting = $pdo->query("
   FROM settings
   WHERE id = 1
 ")->fetch(PDO::FETCH_ASSOC);
+
+$app_theme = $setting['theme'] ?? 'dark';
 
 $store = $setting['store_name'] ?? 'TOKO';
 
@@ -543,7 +546,7 @@ foreach($items_old as $it){
 
 ?>
 <!doctype html>
-<html lang="id" data-theme="dark">
+<html lang="id" data-theme="<?= htmlspecialchars($app_theme) ?>">
 <head>
   <meta charset="utf-8">
   <title><?= htmlspecialchars($store) ?> — Edit Transaksi</title>
@@ -559,7 +562,73 @@ foreach($items_old as $it){
       --text: #e2e8f0;
       --muted: #9bb0c9;
       --accent: #7dd3fc;
+      --topbar-bg: #020817;
+      --grand-bg: linear-gradient(180deg, #081224 0%, #0b162a 100%);
+      --grand-bd: #22406188;
+      --grand-shadow: 0 6px 16px rgba(0,0,0,.35), inset 0 0 0 1px rgba(125,211,252,.08);
+      --grand-lbl: #8fb8ff;
+      --grand-num: #7dd3fc;
+      --grand-num-shadow: 0 0 6px rgba(125,211,252,.8), 0 0 14px rgba(56,189,248,.55), 0 0 28px rgba(56,189,248,.35);
+      --pill-bg: rgba(15,23,42,.65);
+      --pill-bd: rgba(148,163,184,.25);
+      --pill-k: #9ca3af;
+      --th-bg: #0f1a2c;
+      --td-bd: #213047;
+      --tr-odd: #0b1324;
+      --active-row: #0b1a34;
+      --input-bg: #091120;
+      --input-bd: #263243;
+      --btn-bg: #1f2b3e;
+      --btn-bd: #2c3c55;
+      --btn-danger-bg: #3b1f25;
+      --btn-danger-bd: #5b2830;
+      --btn-add-bg: #1f2f28;
+      --btn-add-bd: #2c4c3f;
+      --btn-warn-bg: #3b2b1a;
+      --btn-warn-bd: #5a4324;
+      --overlay-bg: rgba(0,0,0,.55);
+      --box-bg: #0e1726;
+      --box-bd: #223044;
     }
+
+    /* ========== LIGHT THEME ========== */
+    [data-theme="light"] {
+      color-scheme: light;
+      --card-bg: #ffffff;
+      --card-bd: #cbd5e1;
+      --page-bg: #f1f5f9;
+      --text: #0f172a;
+      --muted: #475569;
+      --accent: #0284c7;
+      --topbar-bg: #f8fafc;
+      --grand-bg: linear-gradient(180deg, #e0f2fe 0%, #f0f9ff 100%);
+      --grand-bd: #7dd3fc;
+      --grand-shadow: 0 4px 12px rgba(0,0,0,.08), inset 0 0 0 1px rgba(14,165,233,.15);
+      --grand-lbl: #0369a1;
+      --grand-num: #0284c7;
+      --grand-num-shadow: none;
+      --pill-bg: #f0f9ff;
+      --pill-bd: #bae6fd;
+      --pill-k: #475569;
+      --th-bg: #e2e8f0;
+      --td-bd: #cbd5e1;
+      --tr-odd: #f8fafc;
+      --active-row: #e0f2fe;
+      --input-bg: #ffffff;
+      --input-bd: #cbd5e1;
+      --btn-bg: #bae6fd;
+      --btn-bd: #7dd3fc;
+      --btn-danger-bg: #fee2e2;
+      --btn-danger-bd: #fca5a5;
+      --btn-add-bg: #dcfce7;
+      --btn-add-bd: #86efac;
+      --btn-warn-bg: #fef3c7;
+      --btn-warn-bd: #fcd34d;
+      --overlay-bg: rgba(0,0,0,.3);
+      --box-bg: #ffffff;
+      --box-bd: #cbd5e1;
+    }
+
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
@@ -574,7 +643,7 @@ foreach($items_old as $it){
       height:var(--topbar-h);
       position:sticky;top:0;z-index:50;
       display:flex;align-items:center;justify-content:space-between;
-      padding:0 .8rem;background:#020817;border-bottom:1px solid var(--card-bd);
+      padding:0 .8rem;background:var(--topbar-bg);border-bottom:1px solid var(--card-bd);
     }
     .brand{font-weight:700;letter-spacing:.02em;font-size:1rem}
     .sub{font-size:.75rem;opacity:.75}
@@ -598,14 +667,14 @@ foreach($items_old as $it){
       gap: 1.25rem;
       padding: .9rem 1.1rem;
       border-radius: .75rem;
-      background: linear-gradient(180deg, #081224 0%, #0b162a 100%);
-      border: 1px solid #22406188;
-      box-shadow: 0 6px 16px rgba(0,0,0,.35), inset 0 0 0 1px rgba(125,211,252,.08);
+      background: var(--grand-bg);
+      border: 1px solid var(--grand-bd);
+      box-shadow: var(--grand-shadow);
     }
     .grand .lbl{
       font-size: .9rem;
       letter-spacing: .04em;
-      color: #8fb8ff;
+      color: var(--grand-lbl);
       opacity: .9;
       text-transform:uppercase;
     }
@@ -614,23 +683,21 @@ foreach($items_old as $it){
       font-weight: 800;
       font-size: clamp(1.8rem, 2.4vw + 1rem, 3.25rem);
       letter-spacing: .03em;
-      color: #7dd3fc;
-      text-shadow: 0 0 6px rgba(125,211,252,.8),
-                   0 0 14px rgba(56,189,248,.55),
-                   0 0 28px rgba(56,189,248,.35);
+      color: var(--grand-num);
+      text-shadow: var(--grand-num-shadow);
     }
 
     .grand-meta{ display:flex; gap:.6rem; flex-wrap:wrap; justify-content:flex-end; }
     .meta-pill{
       padding:.35rem .6rem;
       border-radius:.6rem;
-      background:rgba(15,23,42,.65);
-      border:1px solid rgba(148,163,184,.25);
+      background:var(--pill-bg);
+      border:1px solid var(--pill-bd);
       min-width: 140px;
       text-align:right;
     }
-    .meta-pill .k{ font-size:.7rem; letter-spacing:.06em; text-transform:uppercase; color:#9ca3af; }
-    .meta-pill .v{ font-family:ui-monospace,Consolas,Menlo,monospace; font-weight:800; font-size:1rem; }
+    .meta-pill .k{ font-size:.7rem; letter-spacing:.06em; text-transform:uppercase; color:var(--pill-k); }
+    .meta-pill .v{ font-family:ui-monospace,Consolas,Menlo,monospace; font-weight:800; font-size:1rem; color:var(--text); }
 
     .card{
       background:var(--card-bg);
@@ -644,27 +711,27 @@ foreach($items_old as $it){
     .table-wrap{ width:100%; overflow-x:auto; border-radius:.5rem; }
     table{ width:100%; border-collapse:collapse; font-size:.92rem; }
     th,td{
-      border:1px solid #213047;
+      border:1px solid var(--td-bd);
       padding:.5rem .55rem;
       vertical-align:middle;
     }
-    th{ background:#0f1a2c; font-weight:600; white-space:nowrap; }
-    tbody tr:nth-child(odd){ background:#0b1324 }
+    th{ background:var(--th-bg); font-weight:600; white-space:nowrap; color:var(--text); }
+    tbody tr:nth-child(odd){ background:var(--tr-odd) }
     .right{text-align:right}
-    tr.active-row td{ background:#0b1a34 !important }
+    tr.active-row td{ background:var(--active-row) !important }
 
     .col-kode{ width: 160px; }
     .col-qty{ width: 110px; }
     .col-harga{ width: 260px; }
     .col-total{ width: 140px; }
     .col-aksi{ width: 180px; }
-    .qtyInput{ width: 6.2rem; text-align:right }
+    .qtyInput{ width: 6.2rem; text-align:right; background:var(--input-bg); border:1px solid var(--input-bd); color:var(--text); border-radius:.35rem; padding:.35rem .45rem; }
 
     .priceRow{ display:flex; align-items:center; justify-content:space-between; gap:.5rem; }
     .priceText{ font-variant-numeric: tabular-nums; }
     .lvlSel{
-      background:#091120;
-      border:1px solid #263243;
+      background:var(--input-bg);
+      border:1px solid var(--input-bd);
       color:var(--text);
       border-radius:.35rem;
       padding:.35rem .45rem;
@@ -692,51 +759,62 @@ foreach($items_old as $it){
       font-size: 1.05rem;
       padding: .7rem .8rem;
       border-radius: .55rem;
-      background:#091120;
-      border:1px solid #263243;
+      background:var(--input-bg);
+      border:1px solid var(--input-bd);
       color:var(--text);
       width:100%;
     }
 
+    .panel-bottom label{ color:var(--text); }
+
     .row{display:flex;gap:.4rem;align-items:center}
     .muted{font-size:.8rem;color:var(--muted)}
     .btn{
-      background:#1f2b3e;
-      border:1px solid #2c3c55;
+      background:var(--btn-bg);
+      border:1px solid var(--btn-bd);
       color:var(--text);
       padding:.6rem .8rem;
       border-radius:.5rem;
-      cursor:pointer
+      cursor:pointer;
+      font-weight:600;
     }
     .btn:active{transform:translateY(1px)}
-    .btn.danger{ background:#3b1f25; border-color:#5b2830; }
-    .btn.add{ background:#1f2f28; border-color:#2c4c3f; }
-    .btn.warn{ background:#3b2b1a; border-color:#5a4324; }
+    .btn.danger{ background:var(--btn-danger-bg); border-color:var(--btn-danger-bd); }
+    .btn.add{ background:var(--btn-add-bg); border-color:var(--btn-add-bd); }
+    .btn.warn{ background:var(--btn-warn-bg); border-color:var(--btn-warn-bd); }
+
+    .codeInput{
+      background:var(--input-bg);
+      border:1px solid var(--input-bd);
+      color:var(--text);
+      border-radius:.35rem;
+      padding:.35rem .45rem;
+    }
 
     /* Overlay kembalian */
     #changeOverlay{
       display:none;
       position:fixed; inset:0; z-index:9999;
-      background:rgba(0,0,0,.55);
+      background:var(--overlay-bg);
     }
     #changeBox{
       position:absolute; left:50%; top:50%;
       transform:translate(-50%,-50%);
-      background:#0e1726; border:1px solid #223044;
+      background:var(--box-bg); border:1px solid var(--box-bd);
       border-radius:14px;
       padding:18px 22px; min-width:340px;
       text-align:center;
-      box-shadow:0 10px 30px rgba(0,0,0,.5);
+      box-shadow:0 10px 30px rgba(0,0,0,.25);
     }
     #changeTitle{
-      font-size:.9rem; color:#9bb0c9;
+      font-size:.9rem; color:var(--muted);
       letter-spacing:.06em; text-transform:uppercase;
     }
     #changeValue{
-      margin-top:6px; font-size:2.2rem; font-weight:900; color:#7dd3fc;
+      margin-top:6px; font-size:2.2rem; font-weight:900; color:var(--accent);
       font-family:ui-monospace,Consolas,Menlo,monospace;
     }
-    #changeHint{ margin-top:10px; font-size:.85rem; color:#9bb0c9; }
+    #changeHint{ margin-top:10px; font-size:.85rem; color:var(--muted); }
 
     @media print{
       .topbar{display:none!important}
