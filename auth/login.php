@@ -5,9 +5,10 @@ require_once __DIR__ . '/../config.php';
 $err = '';
 
 // Ambil data pengaturan toko
-$setting = $pdo->query("SELECT store_name, logo_url FROM settings WHERE id=1")->fetch(PDO::FETCH_ASSOC) ?: [];
+$setting = $pdo->query("SELECT store_name, logo_url, theme FROM settings WHERE id=1")->fetch(PDO::FETCH_ASSOC) ?: [];
 $store_name = $setting['store_name'] ?? 'TokoAPP';
 $app_logo = !empty($setting['logo_url']) ? $setting['logo_url'] : '/tokoapp/uploads/logo.png';
+$app_theme = $setting['theme'] ?? 'dark'; // Default to dark if not set
 
 // cari background dinamis dari /uploads
 $bgUrl    = '';
@@ -46,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 <!doctype html>
-<html lang="id">
+<html lang="id" data-theme="<?= htmlspecialchars($app_theme) ?>">
 <head>
   <meta charset="utf-8">
   <title><?= htmlspecialchars($store_name) ?> - Login</title>
@@ -54,23 +55,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   <!-- PWA manifest & icon -->
   <link rel="manifest" href="/tokoapp/manifest.webmanifest">
-  <meta name="theme-color" content="#0f172a">
+  <meta name="theme-color" content="<?= $is_light ? '#f8fafc' : '#0f172a' ?>">
   <link rel="icon" type="image/png" href="<?= htmlspecialchars($app_logo) ?>">
 
   <link rel="stylesheet" href="/tokoapp/assets/vendor/pico/pico.min.css">
   <style>
     :root {
       --pico-font-size: 15px;
+      /* Dark theme defaults */
+      --login-bg-color: #0f172a;
+      --login-wrap-bg: rgba(15, 23, 42, .86);
+      --login-wrap-border: rgba(148, 163, 184, .4);
+      --login-wrap-shadow: 0 12px 36px rgba(0,0,0,.4);
+      --login-overlay-1: rgba(15,23,42,.78);
+      --login-overlay-2: rgba(15,23,42,.35);
+      --login-sub-color: #94a3b8;
+      --login-top-mini-color: #cbd5f5;
+      --login-title-color: #e2e8f0;
+      --login-label-color: #cbd5e1;
+    }
+    [data-theme="light"] {
+      --login-bg-color: #e8f0fe;
+      --login-wrap-bg: rgba(255, 255, 255, .93);
+      --login-wrap-border: rgba(148, 163, 184, .5);
+      --login-wrap-shadow: 0 12px 36px rgba(0,0,0,.12);
+      --login-overlay-1: rgba(226,234,245,.82);
+      --login-overlay-2: rgba(226,234,245,.50);
+      --login-sub-color: #475569;
+      --login-top-mini-color: #334155;
+      --login-title-color: #0f172a;
+      --login-label-color: #1e293b;
     }
     body {
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #0f172a;
+      background: var(--login-bg-color);
       <?php if ($bgUrl): ?>
       background-image:
-        linear-gradient(120deg, rgba(15,23,42,.78), rgba(15,23,42,.35)),
+        linear-gradient(120deg, var(--login-overlay-1), var(--login-overlay-2)),
         url("<?= htmlspecialchars($bgUrl) ?>");
       background-size: cover;
       background-position: center;
@@ -78,26 +102,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     .login-wrap {
       width: min(460px, 92vw);
-      background: rgba(15, 23, 42, .86);
-      border: 1px solid rgba(148, 163, 184, .4);
+      background: var(--login-wrap-bg);
+      border: 1px solid var(--login-wrap-border);
       border-radius: 1rem;
       padding: 1.2rem 1.4rem 1.1rem;
-      box-shadow: 0 12px 36px rgba(0,0,0,.4);
-      backdrop-filter: blur(6px);
+      box-shadow: var(--login-wrap-shadow);
+      backdrop-filter: blur(8px);
     }
     h3 {
       margin-bottom: .4rem;
+      color: var(--login-title-color);
     }
     .sub {
       font-size: .8rem;
-      color: #94a3b8;
+      color: var(--login-sub-color);
       margin-bottom: .9rem;
     }
     form.grid label {
       margin-bottom: .5rem;
+      color: var(--login-label-color);
     }
     input {
       height: 38px;
+    }
+    /* Override Pico CSS untuk tema cerah */
+    [data-theme="light"] input[type="text"],
+    [data-theme="light"] input[type="password"] {
+      background-color: #ffffff !important;
+      color: #0f172a !important;
+      border-color: #94a3b8 !important;
+    }
+    [data-theme="light"] button[type="submit"] {
+      background-color: #0284c7 !important;
+      color: #ffffff !important;
+      border-color: #0369a1 !important;
+    }
+    [data-theme="light"] button[type="submit"]:hover {
+      background-color: #0369a1 !important;
     }
     button {
       margin-top: .3rem;
@@ -113,12 +154,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     .app-title {
       font-weight: 700;
       font-size: 1.05rem;
+      color: var(--login-title-color);
     }
     .top-mini {
       font-size: .7rem;
       text-align: center;
       margin-bottom: .4rem;
-      color: #cbd5f5;
+      color: var(--login-top-mini-color);
     }
     .logo-img {
       height: 56px;
