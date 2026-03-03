@@ -124,12 +124,42 @@ $allModules = $pdo->query("SELECT module_code, module_name FROM modules ORDER BY
 ?>
 
 <style>
+/* ===== CSS Variables Users ===== */
+:root {
+  --usr-card-bg:   #020617;
+  --usr-card-bd:   #1f2937;
+  --usr-muted:     #94a3b8;
+  --usr-btn-bg:    #0b1220;
+  --usr-btn-color: #e5e7eb;
+  --usr-btn-bd:    #1f2937;
+  --usr-det-bg:    #020617;
+  --usr-det-open:  #0b162b;
+  --usr-perm-bd:   #374151;
+  --usr-badge-bg:  rgba(15,118,110,.25);
+  --usr-badge-bd:  rgba(45,212,191,.6);
+  --usr-badge-color: #a5f3fc;
+}
+[data-theme="light"] {
+  --usr-card-bg:   #f8fafc;
+  --usr-card-bd:   #cbd5e1;
+  --usr-muted:     #475569;
+  --usr-btn-bg:    #e2e8f0;
+  --usr-btn-color: #1e293b;
+  --usr-btn-bd:    #94a3b8;
+  --usr-det-bg:    #f1f5f9;
+  --usr-det-open:  #e0f2fe;
+  --usr-perm-bd:   #94a3b8;
+  --usr-badge-bg:  rgba(2,132,199,.12);
+  --usr-badge-bd:  rgba(2,132,199,.5);
+  --usr-badge-color: #0369a1;
+}
+
 .user-page h3 {
   margin-bottom: .3rem;
 }
 .user-page .subtext {
   font-size: .8rem;
-  color: #94a3b8;
+  color: var(--usr-muted);
   margin-bottom: .7rem;
 }
 .user-page .banner {
@@ -143,9 +173,9 @@ $allModules = $pdo->query("SELECT module_code, module_name FROM modules ORDER BY
   font-size:.75rem;
   padding:.2rem .5rem;
   border-radius:999px;
-  background:rgba(15,118,110,.25);
-  border:1px solid rgba(45,212,191,.6);
-  color:#a5f3fc;
+  background: var(--usr-badge-bg);
+  border:1px solid var(--usr-badge-bd);
+  color: var(--usr-badge-color);
 }
 .user-page .alert-ok,
 .user-page .alert-err {
@@ -166,9 +196,9 @@ $allModules = $pdo->query("SELECT module_code, module_name FROM modules ORDER BY
 
 .user-add-card {
   border-radius:.7rem;
-  border:1px solid #1f2937;
+  border:1px solid var(--usr-card-bd);
   padding:.75rem .8rem;
-  background:#020617;
+  background: var(--usr-card-bg);
   margin-bottom:.8rem;
 }
 .user-add-card summary {
@@ -186,6 +216,16 @@ $allModules = $pdo->query("SELECT module_code, module_name FROM modules ORDER BY
   margin-bottom:.4rem;
 }
 
+/* Override input dalam tema cerah */
+[data-theme="light"] .user-add-card input,
+[data-theme="light"] .user-add-card select,
+[data-theme="light"] .user-inline-details input,
+[data-theme="light"] .user-inline-details select {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #94a3b8 !important;
+}
+
 .user-table-actions {
   display:flex;
   flex-wrap:wrap;
@@ -198,16 +238,18 @@ $allModules = $pdo->query("SELECT module_code, module_name FROM modules ORDER BY
   font-size:.72rem;
   padding:.25rem .5rem;
   border-radius:.35rem;
-  border:1px solid #1f2937;
-  background:#0b1220;
-  color:#e5e7eb;
+  border:1px solid var(--usr-btn-bd);
+  background: var(--usr-btn-bg);
+  color: var(--usr-btn-color);
+  cursor:pointer;
 }
 .user-btn.danger {
   background:#b91c1c;
-  border-color:#b91c1c;
+  border-color:#fca5a5;
+  color:#fff;
 }
 .user-btn.soft {
-  background:#020617;
+  background: var(--usr-det-bg);
 }
 .user-badge-role {
   font-size:.7rem;
@@ -223,6 +265,14 @@ $allModules = $pdo->query("SELECT module_code, module_name FROM modules ORDER BY
   border-color:rgba(59,130,246,.7);
   color:#bfdbfe;
 }
+[data-theme="light"] .user-badge-role.admin {
+  border-color:rgba(234,88,12,.8);
+  color:#9a3412;
+}
+[data-theme="light"] .user-badge-role.kasir {
+  border-color:rgba(37,99,235,.7);
+  color:#1e3a8a;
+}
 .user-badge-status {
   font-size:.7rem;
   padding:.08rem .35rem;
@@ -236,6 +286,14 @@ $allModules = $pdo->query("SELECT module_code, module_name FROM modules ORDER BY
   background:rgba(239,68,68,.12);
   color:#fecaca;
 }
+[data-theme="light"] .user-badge-status.on {
+  background:rgba(22,163,74,.15);
+  color:#15803d;
+}
+[data-theme="light"] .user-badge-status.off {
+  background:rgba(239,68,68,.1);
+  color:#b91c1c;
+}
 .user-inline-details {
   display:inline-block;
   margin-left:.18rem;
@@ -246,11 +304,11 @@ $allModules = $pdo->query("SELECT module_code, module_name FROM modules ORDER BY
   font-size:.7rem;
   padding:.18rem .4rem;
   border-radius:.35rem;
-  border:1px solid #1f2937;
-  background:#020617;
+  border:1px solid var(--usr-card-bd);
+  background: var(--usr-det-bg);
 }
 .user-inline-details[open] summary {
-  background:#0b162b;
+  background: var(--usr-det-open);
 }
 .user-inline-details form.grid {
   margin-top:.4rem;
@@ -274,7 +332,7 @@ $allModules = $pdo->query("SELECT module_code, module_name FROM modules ORDER BY
   grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   gap: 0.3rem;
   margin: 0.5rem 0;
-  border: 1px solid #374151;
+  border: 1px solid var(--usr-perm-bd);
   padding: 0.5rem;
   border-radius: 0.4rem;
   max-height: 200px;

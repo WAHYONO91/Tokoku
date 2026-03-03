@@ -4,10 +4,10 @@ require_once __DIR__.'/config.php';
 require_login();
 require_once __DIR__.'/includes/header.php';
 
-// ===== DEBUG (matikan di produksi) =====
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+// ===== DEBUG (nonaktif di produksi) =====
+// ini_set('display_errors', 1);
+// ini_set('display_startup_errors', 1);
+// error_reporting(E_ALL);
 
 // ===== SETTINGS =====
 $setting = [];
@@ -32,22 +32,70 @@ $RPP_UMUM   = $rp_point_umum_db   ?: (($coef_umum   > 0) ? (int)round(1/$coef_um
 $RPP_GROSIR = $rp_point_grosir_db ?: (($coef_grosir > 0) ? (int)round(1/$coef_grosir) : 0);
 ?>
 <style>
+/* ===== CSS Variables POS ===== */
+:root {
+  --pos-card-bg: #0f172a;
+  --pos-card-bd: #1f2937;
+  --pos-label-color: #94a3b8;
+  --pos-grand-bg: #0f172a;
+  --pos-grand-color: #00ffff;
+  --pos-footer-bg: #0f172a;
+  --pos-footer-color: #e5e7eb;
+  --pos-footer-bd: #1f2937;
+  --pos-chip-bg: #0b1222;
+  --pos-chip-bd: #1f2937;
+  --pos-kbd-bg: #111827;
+  --pos-kbd-bd: #374151;
+  --pos-toggle-bg: #0b1222;
+  --pos-toggle-bd: #1f2937;
+  --pos-toggle-color: #e5e7eb;
+  --pos-toggle-active: #1f2937;
+  --pos-slot-bg: #0f172a;
+  --pos-slot-bd: #1f2937;
+  --pos-slot-btn-bg: #111827;
+  --pos-slot-btn-color: #e5e7eb;
+  --pos-slot-occ-bg: #0b1e3b;
+}
+[data-theme="light"] {
+  --pos-card-bg: #ffffff;
+  --pos-card-bd: #cbd5e1;
+  --pos-label-color: #475569;
+  --pos-grand-bg: #f0f9ff;
+  --pos-grand-color: #0284c7;
+  --pos-footer-bg: #f8fafc;
+  --pos-footer-color: #1e293b;
+  --pos-footer-bd: #cbd5e1;
+  --pos-chip-bg: #e0f2fe;
+  --pos-chip-bd: #bae6fd;
+  --pos-kbd-bg: #e2e8f0;
+  --pos-kbd-bd: #94a3b8;
+  --pos-toggle-bg: #e0f2fe;
+  --pos-toggle-bd: #bae6fd;
+  --pos-toggle-color: #0f172a;
+  --pos-toggle-active: #bae6fd;
+  --pos-slot-bg: #f8fafc;
+  --pos-slot-bd: #cbd5e1;
+  --pos-slot-btn-bg: #e2e8f0;
+  --pos-slot-btn-color: #1e293b;
+  --pos-slot-occ-bg: #e0f2fe;
+}
+
 /* ===== UI Kartu Total ===== */
 .totals-banner{display:flex;gap:.8rem;margin:.6rem 0 3.2rem;flex-wrap:wrap}
-.totals-box{flex:1 1 180px;border:1px solid #1f2937;border-radius:12px;padding:.6rem .8rem;background:#0f172a;}
-.totals-label{font-size:.8rem;color:#94a3b8;margin-bottom:.25rem}
+.totals-box{flex:1 1 180px;border:1px solid var(--pos-card-bd);border-radius:12px;padding:.6rem .8rem;background:var(--pos-card-bg);}
+.totals-label{font-size:.8rem;color:var(--pos-label-color);margin-bottom:.25rem}
 .totals-number{font-size:1.4rem;font-weight:700;letter-spacing:.5px}
 @media (max-width:640px){.totals-number{font-size:1.2rem}}
 .badge-jenis{background:#6b7280;color:#fff;padding:.15rem .45rem;border-radius:.4rem;font-size:.78rem}
 
 /* ===== Banner Grand Total ===== */
-#grandDisplayWrap{position:sticky; top:0; z-index:10; background:#0f172a; color:#0ff; padding:.5rem .7rem; border:1px solid #1f2937; border-radius:.5rem; margin:.5rem 0;}
+#grandDisplayWrap{position:sticky; top:0; z-index:10; background:var(--pos-grand-bg); color:var(--pos-grand-color); padding:.5rem .7rem; border:1px solid var(--pos-card-bd); border-radius:.5rem; margin:.5rem 0;}
 #grandDisplay{font-family:ui-monospace,Consolas,Menlo,monospace; font-size:2rem; letter-spacing:.03em;}
 
 /* ===== Footer Panduan Tombol ===== */
 .hotkey-footer{
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
-  background: #0f172a; color: #e5e7eb; border-top: 1px solid #1f2937;
+  background: var(--pos-footer-bg); color: var(--pos-footer-color); border-top: 1px solid var(--pos-footer-bd);
   padding: .5rem .75rem; font-size: .88rem;
 }
 .hotkey-footer .inner{
@@ -57,12 +105,12 @@ $RPP_GROSIR = $rp_point_grosir_db ?: (($coef_grosir > 0) ? (int)round(1/$coef_gr
 .hotkey-footer .title{font-weight:600;margin-right:.25rem;white-space:nowrap;opacity:.9}
 .hotkey-footer .chip{
   display:inline-flex;align-items:center;gap:.35rem;padding:.25rem .5rem;
-  border:1px solid #1f2937;border-radius:8px;background:#0b1222;white-space:nowrap;
+  border:1px solid var(--pos-chip-bd);border-radius:8px;background:var(--pos-chip-bg);white-space:nowrap;
 }
 .hotkey-footer kbd{
-  background:#111827;border:1px solid #374151;border-radius:6px;
+  background:var(--pos-kbd-bg);border:1px solid var(--pos-kbd-bd);border-radius:6px;
   padding:.05rem .35rem; font-family:ui-monospace,Consolas,Menlo,monospace;
-  font-size:.8rem; color:#f9fafb;
+  font-size:.8rem; color:var(--pos-footer-color);
 }
 .hotkey-footer.hidden{display:none}
 @media print{ .hotkey-footer{ display:none !important; } }
@@ -75,25 +123,25 @@ $RPP_GROSIR = $rp_point_grosir_db ?: (($coef_grosir > 0) ? (int)round(1/$coef_gr
   display:inline-flex;gap:.25rem;margin-left:.35rem;vertical-align:middle
 }
 .toggle-unit button{
-  border:1px solid #1f2937;background:#0b1222;color:#e5e7eb;padding:.1rem .4rem;border-radius:6px;font-size:.78rem;cursor:pointer
+  border:1px solid var(--pos-toggle-bd);background:var(--pos-toggle-bg);color:var(--pos-toggle-color);padding:.1rem .4rem;border-radius:6px;font-size:.78rem;cursor:pointer
 }
-.toggle-unit button.active{background:#1f2937}
+.toggle-unit button.active{background:var(--pos-toggle-active)}
 .help-mini{font-size:.78rem;opacity:.8;margin-top:.2rem;display:block}
 
 /* ===== Held Transactions UI ===== */
 .held-slots{display:flex;gap:.6rem;margin-bottom:1rem;flex-wrap:wrap}
 .held-slot{
   flex:1; min-width:140px; padding:.6rem; border-radius:10px;
-  background:#0f172a; border:1px solid #1f2937; position:relative;
+  background:var(--pos-slot-bg); border:1px solid var(--pos-slot-bd); position:relative;
   display:flex; flex-direction:column; gap:.4rem;
 }
-.held-slot.occupied{border-color:#3b82f6; background:#0b1e3b}
-.held-slot-title{font-size:.7rem; text-transform:uppercase; letter-spacing:.5px; color:#94a3b8}
+.held-slot.occupied{border-color:#3b82f6; background:var(--pos-slot-occ-bg)}
+.held-slot-title{font-size:.7rem; text-transform:uppercase; letter-spacing:.5px; color:var(--pos-label-color)}
 .held-slot-info{font-size:.85rem; font-weight:600; min-height:1.2rem}
 .held-slot-btns{display:flex; gap:.35rem}
 .held-slot-btns button{
   flex:1; padding:.3rem .5rem; font-size:.75rem; border-radius:6px; cursor:pointer;
-  border:1px solid #1f2937; background:#111827; color:#e5e7eb;
+  border:1px solid var(--pos-slot-bd); background:var(--pos-slot-btn-bg); color:var(--pos-slot-btn-color);
 }
 .held-slot.occupied .btn-hold{display:none}
 .held-slot:not(.occupied) .btn-resume{display:none}
