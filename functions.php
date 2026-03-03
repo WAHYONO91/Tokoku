@@ -3,11 +3,129 @@
 // AUTH & SESSION HELPER
 // =====================
 
+// ===== REMEMBER ME =====
+define('REMEMBER_COOKIE_NAME', 'tokoapp_remember');
+define('REMEMBER_DAYS',        30);
+
+/**
+ * Buat & simpan token remember me ke DB + set cookie
+ */
+function remember_me_set(PDO $pdo, int $user_id): void {
+    // Migrasi tabel kalau belum ada
+    try {
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS remember_tokens (
+                id         INT AUTO_INCREMENT PRIMARY KEY,
+                user_id    INT NOT NULL,
+                token_hash VARCHAR(64) NOT NULL,
+                expires_at DATETIME NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_token (token_hash),
+                INDEX idx_user  (user_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        ");
+    } catch (Throwable $e) {}
+
+    // Hapus token lama milik user ini
+    try {
+        $pdo->prepare("DELETE FROM remember_tokens WHERE user_id = ?")->execute([$user_id]);
+    } catch (Throwable $e) {}
+
+    // Buat token baru
+    $raw_token  = bin2hex(random_bytes(32));       // 64 karakter hex
+    $token_hash = hash('sha256', $raw_token);
+    $expires    = date('Y-m-d H:i:s', time() + (REMEMBER_DAYS * 86400));
+
+    try {
+        $pdo->prepare("INSERT INTO remember_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)")
+            ->execute([$user_id, $token_hash, $expires]);
+    } catch (Throwable $e) { return; }
+
+    // Set cookie (HttpOnly untuk keamanan)
+    setcookie(
+        REMEMBER_COOKIE_NAME,
+        $raw_token,
+        [
+            'expires'  => time() + (REMEMBER_DAYS * 86400),
+            'path'     => '/tokoapp/',
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]
+    );
+}
+
+/**
+ * Hapus token remember me dari DB + hapus cookie
+ */
+function remember_me_clear(PDO $pdo): void {
+    $raw_token = $_COOKIE[REMEMBER_COOKIE_NAME] ?? '';
+    if ($raw_token !== '') {
+        $hash = hash('sha256', $raw_token);
+        try {
+            $pdo->prepare("DELETE FROM remember_tokens WHERE token_hash = ?")->execute([$hash]);
+        } catch (Throwable $e) {}
+    }
+    // Hapus cookie
+    setcookie(REMEMBER_COOKIE_NAME, '', [
+        'expires'  => time() - 3600,
+        'path'     => '/tokoapp/',
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+}
+
+/**
+ * Cek cookie remember me dan auto-login jika valid.
+ * Panggil ini di awal require_login() / require_access() sebelum cek session.
+ */
+function remember_me_auto_login(PDO $pdo): void {
+    if (isset($_SESSION['user'])) return;  // sudah login
+
+    $raw_token = $_COOKIE[REMEMBER_COOKIE_NAME] ?? '';
+    if ($raw_token === '') return;
+
+    $hash = hash('sha256', $raw_token);
+
+    try {
+        $st = $pdo->prepare("
+            SELECT rt.user_id, rt.expires_at, u.username, u.role
+            FROM remember_tokens rt
+            JOIN users u ON u.id = rt.user_id
+            WHERE rt.token_hash = ?
+              AND u.is_active = 1
+            LIMIT 1
+        ");
+        $st->execute([$hash]);
+        $row = $st->fetch(PDO::FETCH_ASSOC);
+    } catch (Throwable $e) { return; }
+
+    if (!$row) { remember_me_clear($pdo); return; }
+
+    // Cek kadaluarsa
+    if (strtotime($row['expires_at']) < time()) {
+        remember_me_clear($pdo);
+        return;
+    }
+
+    // Auto-login: set session
+    $_SESSION['user'] = [
+        'id'       => (int)$row['user_id'],
+        'username' => $row['username'],
+        'role'     => $row['role'],
+    ];
+
+    // Perpanjang token (rolling renewal)
+    remember_me_set($pdo, (int)$row['user_id']);
+}
+// ===== END REMEMBER ME =====
+
 function is_logged_in() {
   return isset($_SESSION['user']);
 }
 
 function require_login() {
+  global $pdo;
+  remember_me_auto_login($pdo);
   if (!is_logged_in()) {
     header('Location: /tokoapp/auth/login.php');
     exit;
@@ -31,6 +149,8 @@ function require_role($roles = []) {
  * Require specific module access
  */
 function require_access(string $moduleCode) {
+  global $pdo;
+  remember_me_auto_login($pdo);
   if (!is_logged_in()) {
     header('Location: /tokoapp/auth/login.php');
     exit;

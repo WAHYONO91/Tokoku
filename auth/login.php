@@ -4,11 +4,19 @@ require_once __DIR__ . '/../config.php';
 
 $err = '';
 
+// Sudah login via session atau remember-me cookie? Redirect langsung
+remember_me_auto_login($pdo);
+if (is_logged_in()) {
+    header('Location: /tokoapp/index.php');
+    exit;
+}
+
 // Ambil data pengaturan toko
 $setting = $pdo->query("SELECT store_name, logo_url, theme FROM settings WHERE id=1")->fetch(PDO::FETCH_ASSOC) ?: [];
 $store_name = $setting['store_name'] ?? 'TokoAPP';
 $app_logo = !empty($setting['logo_url']) ? $setting['logo_url'] : '/tokoapp/uploads/logo.png';
-$app_theme = $setting['theme'] ?? 'dark'; // Default to dark if not set
+$app_theme = $setting['theme'] ?? 'dark';
+$is_light  = ($app_theme === 'light');
 
 // cari background dinamis dari /uploads
 $bgUrl    = '';
@@ -24,8 +32,9 @@ if (is_dir($uploadDir)) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $u = trim($_POST['username'] ?? '');
-    $p = $_POST['password'] ?? '';
+    $u           = trim($_POST['username'] ?? '');
+    $p           = $_POST['password'] ?? '';
+    $remember_me = isset($_POST['remember_me']);
 
     $st = $pdo->prepare('SELECT * FROM users WHERE username = ? AND is_active = 1');
     $st->execute([$u]);
@@ -37,8 +46,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'username' => $user['username'],
             'role'     => $user['role']
         ];
+        // Simpan remember me token jika checkbox dicentang
+        if ($remember_me) {
+            remember_me_set($pdo, (int)$user['id']);
+        }
         log_activity($pdo, 'LOGIN', 'User berhasil login ke sistem.');
-        // setelah login masuk ke dashboard utama
         header('Location: /tokoapp/index.php');
         exit;
     } else {
@@ -168,6 +180,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       margin: 0 auto .5rem;
       object-fit: contain;
     }
+    /* Remember me row */
+    .remember-row {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      margin: .1rem 0 .5rem;
+      font-size: .82rem;
+      color: var(--login-label-color);
+    }
+    .remember-row input[type="checkbox"] {
+      width: auto !important;
+      height: auto !important;
+      margin: 0;
+      accent-color: #0284c7;
+    }
   </style>
 </head>
 <body>
@@ -189,6 +216,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <label>Password
         <input name="password" type="password" autocomplete="current-password" required>
       </label>
+      <div class="remember-row">
+        <input type="checkbox" name="remember_me" id="remember_me" value="1">
+        <label for="remember_me" style="margin:0;font-size:.82rem;">Ingat saya selama 30 hari</label>
+      </div>
       <button type="submit">Masuk</button>
     </form>
   </main>
