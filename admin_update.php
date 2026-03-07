@@ -61,7 +61,13 @@ require_once __DIR__ . '/includes/header.php';
   <?php endif; ?>
 
   <footer>
-    <small>Versi Updater: 1.0.0 (Maret 2025)</small>
+    <?php 
+    $app_version = '1.2.0';
+    if (file_exists(__DIR__ . '/VERSION')) {
+        $app_version = trim(file_get_contents(__DIR__ . '/VERSION'));
+    }
+    ?>
+    <small>Versi Aplikasi: <?= htmlspecialchars($app_version) ?> (Maret 2026)</small>
   </footer>
 </article>
 
