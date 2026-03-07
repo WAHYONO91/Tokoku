@@ -50,7 +50,7 @@ if ($filter_kat !== '') {
     $params[] = $filter_kat;
 }
 
-$sql .= " GROUP BY i.kode ORDER BY i.nama ASC LIMIT 60";
+$sql .= " GROUP BY i.kode ORDER BY (stok_toko + stok_gudang) DESC, i.nama ASC LIMIT 40";
 
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
