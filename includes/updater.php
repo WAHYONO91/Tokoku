@@ -227,5 +227,10 @@ function run_app_updates(PDO $pdo) {
         $pdo->exec("ALTER TABLE purchases MODIFY COLUMN supplier_kode VARCHAR(50)");
     });
 
+    // 11. Tambahan kolom lat_lng di online_orders
+    $mgr->apply('2025_03_08_add_lat_lng_to_online_orders', function($pdo) {
+        $pdo->exec("ALTER TABLE online_orders ADD COLUMN IF NOT EXISTS lat_lng VARCHAR(100) NULL AFTER note");
+    });
+
     return $mgr->getLogs();
 }
