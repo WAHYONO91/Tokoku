@@ -270,8 +270,8 @@ $items = $stmtItems->fetchAll(PDO::FETCH_ASSOC);
                     <tr style="background:transparent;">
                         <td style="padding:0.5rem 0; border:none;" class="muted">Lokasi Map</td>
                         <td style="padding:0.5rem 0; border:none;">
-                            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-                            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+                            <link rel="stylesheet" href="/tokoapp/assets/vendor/leaflet/leaflet.css" />
+                            <script src="/tokoapp/assets/vendor/leaflet/leaflet.js"></script>
                             <div id="view_map" style="height: 180px; border-radius: 6px; border: 1px solid var(--card-bd); margin-bottom: 0.5rem;"></div>
                             <a href="https://www.google.com/maps/search/?api=1&query=<?= urlencode($order['lat_lng']) ?>" target="_blank" role="button" class="secondary outline" style="font-size: 0.75rem; padding: 0.25rem 0.75rem; width: auto;">
                                 📍 Buka di Google Maps

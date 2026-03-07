@@ -232,5 +232,16 @@ function run_app_updates(PDO $pdo) {
         $pdo->exec("ALTER TABLE online_orders ADD COLUMN IF NOT EXISTS lat_lng VARCHAR(100) NULL AFTER note");
     });
 
+    // 13. Optimasi Performance: Database Indexes
+    $mgr->apply('2025_03_09_add_performance_indexes', function($pdo) {
+        // Items: Index nama dan kategori untuk pencarian/filter cepat
+        $pdo->exec("ALTER TABLE items ADD INDEX IF NOT EXISTS idx_items_nama (nama)");
+        $pdo->exec("ALTER TABLE items ADD INDEX IF NOT EXISTS idx_items_kategori (kategori)");
+        
+        // Online Orders: Index tanggal dan status untuk laporan/listing admin
+        $pdo->exec("ALTER TABLE online_orders ADD INDEX IF NOT EXISTS idx_orders_tanggal (tanggal)");
+        $pdo->exec("ALTER TABLE online_orders ADD INDEX IF NOT EXISTS idx_orders_status (status)");
+    });
+
     return $mgr->getLogs();
 }

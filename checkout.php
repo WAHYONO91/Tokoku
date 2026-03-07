@@ -187,9 +187,9 @@ if (isset($_SESSION['member']) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
                     <textarea name="guest_address" rows="3" required placeholder="Lengkapi dengan RT/RW, Kelurahan, Kecamatan, Patokan, dll"><?= htmlspecialchars($def_address) ?></textarea>
                 </label>
 
-                <!-- MAP PICKER -->
-                <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-                <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+                <!-- MAP PICKER (LOCALIZED) -->
+                <link rel="stylesheet" href="/tokoapp/assets/vendor/leaflet/leaflet.css" />
+                <script src="/tokoapp/assets/vendor/leaflet/leaflet.js"></script>
                 
                 <label>Tandai Lokasi di Map (Opsional)
                     <div id="map" style="height: 300px; border-radius: 8px; margin-bottom: 0.5rem; border: 1px solid var(--card-bd);"></div>
