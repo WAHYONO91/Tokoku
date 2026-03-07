@@ -198,8 +198,8 @@ if (isset($_SESSION['member']) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
 
                 <script>
                     document.addEventListener('DOMContentLoaded', function() {
-                        var initialLat = -7.4243; // Default (Banyumas area)
-                        var initialLng = 109.2311;
+                        var initialLat = -7.375765; // Default (Gumelar, Banyumas)
+                        var initialLng = 108.981065;
                         
                         var savedLatLng = document.getElementById('lat_lng').value;
                         if (savedLatLng) {
