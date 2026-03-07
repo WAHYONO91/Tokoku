@@ -230,6 +230,7 @@ if (isset($_SESSION['member']) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
                             }
                         });
                         
+                        /* 
                         // Try to get user location
                         if (!savedLatLng && navigator.geolocation) {
                             navigator.geolocation.getCurrentPosition(function(position) {
@@ -238,6 +239,7 @@ if (isset($_SESSION['member']) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
                                 map.setView([userLat, userLng], 15);
                             });
                         }
+                        */
                     });
                 </script>
 
