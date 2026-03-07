@@ -265,6 +265,37 @@ $items = $stmtItems->fetchAll(PDO::FETCH_ASSOC);
                     <tr style="background:transparent;"><td style="padding:0.3rem 0; border:none;" class="muted">Alamat</td><td style="padding:0.3rem 0; border:none;"><?= nl2br(htmlspecialchars($order['guest_address'])) ?></td></tr>
                     <tr style="background:transparent;"><td style="padding:0.3rem 0; border:none;" class="muted">Catatan</td><td style="padding:0.3rem 0; border:none;"><?= htmlspecialchars($order['note'] ?: '-') ?></td></tr>
                     <tr style="background:transparent;"><td style="padding:0.3rem 0; border:none;" class="muted">Via</td><td style="padding:0.3rem 0; border:none;"><strong><?= htmlspecialchars($order['payment_method']) ?></strong></td></tr>
+                    
+                    <?php if (!empty($order['lat_lng'])): ?>
+                    <tr style="background:transparent;">
+                        <td style="padding:0.5rem 0; border:none;" class="muted">Lokasi Map</td>
+                        <td style="padding:0.5rem 0; border:none;">
+                            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+                            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+                            <div id="view_map" style="height: 180px; border-radius: 6px; border: 1px solid var(--card-bd); margin-bottom: 0.5rem;"></div>
+                            <a href="https://www.google.com/maps/search/?api=1&query=<?= urlencode($order['lat_lng']) ?>" target="_blank" role="button" class="secondary outline" style="font-size: 0.75rem; padding: 0.25rem 0.75rem; width: auto;">
+                                📍 Buka di Google Maps
+                            </a>
+                            <script>
+                                document.addEventListener('DOMContentLoaded', function() {
+                                    var coords = "<?= $order['lat_lng'] ?>".split(',');
+                                    var lat = parseFloat(coords[0]);
+                                    var lng = parseFloat(coords[1]);
+                                    var map = L.map('view_map', {
+                                        dragging: false,
+                                        scrollWheelZoom: false,
+                                        doubleClickZoom: false,
+                                        zoomControl: false
+                                    }).setView([lat, lng], 15);
+                                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                                        attribution: '&copy; OSM'
+                                    }).addTo(map);
+                                    L.marker([lat, lng]).addTo(map);
+                                });
+                            </script>
+                        </td>
+                    </tr>
+                    <?php endif; ?>
                 </table>
             </div>
             

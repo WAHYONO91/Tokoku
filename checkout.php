@@ -64,7 +64,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $status = 'PENDING';
             $payment_status = 'UNPAID';
             
-            $stmt = $pdo->prepare("INSERT INTO online_orders (member_kode, guest_name, guest_phone, guest_address, subtotal, total, payment_method, payment_status, status, note, tanggal) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+            $guest_lat_lng = trim($_POST['lat_lng'] ?? '');
+            
+            $stmt = $pdo->prepare("INSERT INTO online_orders (member_kode, guest_name, guest_phone, guest_address, subtotal, total, payment_method, payment_status, status, note, lat_lng, tanggal) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
             $stmt->execute([
                 $member_kode,
                 $guest_name,
@@ -75,7 +77,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $payment_method,
                 $payment_status,
                 $status,
-                $note
+                $note,
+                $guest_lat_lng
             ]);
             $order_id = $pdo->lastInsertId();
             
@@ -168,6 +171,8 @@ if (isset($_SESSION['member']) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
         <div>
             <form method="post" autocomplete="off" style="background:var(--card-bg, #111827); border:1px solid var(--card-bd, #1f2937); border-radius:8px; padding:1.25rem;">
                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                <input type="hidden" name="lat_lng" id="lat_lng" value="<?= htmlspecialchars($_POST['lat_lng'] ?? '') ?>">
+                
                 <h4>Data Pengiriman</h4>
                 
                 <label>Nama Lengkap / Penerima
@@ -181,6 +186,60 @@ if (isset($_SESSION['member']) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
                 <label>Alamat Lengkap Pengiriman
                     <textarea name="guest_address" rows="3" required placeholder="Lengkapi dengan RT/RW, Kelurahan, Kecamatan, Patokan, dll"><?= htmlspecialchars($def_address) ?></textarea>
                 </label>
+
+                <!-- MAP PICKER -->
+                <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+                <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+                
+                <label>Tandai Lokasi di Map (Opsional)
+                    <div id="map" style="height: 300px; border-radius: 8px; margin-bottom: 0.5rem; border: 1px solid var(--card-bd);"></div>
+                    <small class="muted">Klik pada peta untuk menentukan titik lokasi pengiriman Anda.</small>
+                </label>
+
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        var initialLat = -7.4243; // Default (Banyumas area)
+                        var initialLng = 109.2311;
+                        
+                        var savedLatLng = document.getElementById('lat_lng').value;
+                        if (savedLatLng) {
+                            var parts = savedLatLng.split(',');
+                            initialLat = parseFloat(parts[0]);
+                            initialLng = parseFloat(parts[1]);
+                        }
+
+                        var map = L.map('map').setView([initialLat, initialLng], 13);
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            attribution: '&copy; OpenStreetMap'
+                        }).addTo(map);
+
+                        var marker;
+                        if (savedLatLng) {
+                            marker = L.marker([initialLat, initialLng]).addTo(map);
+                        }
+
+                        map.on('click', function(e) {
+                            var lat = e.latlng.lat.toFixed(6);
+                            var lng = e.latlng.lng.toFixed(6);
+                            document.getElementById('lat_lng').value = lat + ',' + lng;
+                            
+                            if (marker) {
+                                marker.setLatLng(e.latlng);
+                            } else {
+                                marker = L.marker(e.latlng).addTo(map);
+                            }
+                        });
+                        
+                        // Try to get user location
+                        if (!savedLatLng && navigator.geolocation) {
+                            navigator.geolocation.getCurrentPosition(function(position) {
+                                var userLat = position.coords.latitude;
+                                var userLng = position.coords.longitude;
+                                map.setView([userLat, userLng], 15);
+                            });
+                        }
+                    });
+                </script>
 
                 <label>Catatan Order (Opsional)
                     <input type="text" name="note" placeholder="Misal: Warna pesanan, waktu pengiriman" value="<?= htmlspecialchars($_POST['note'] ?? '') ?>">
