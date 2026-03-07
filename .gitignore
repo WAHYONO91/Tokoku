@@ -7,6 +7,7 @@ Thumbs.db
 
 # Secrets
 .env
+config.php
 
 # Database dumps / backups
 *.sql
