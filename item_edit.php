@@ -34,14 +34,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $h3          = (int)($_POST['harga_jual3'] ?? 0);
   $h4          = (int)($_POST['harga_jual4'] ?? 0);
   $min_stock   = (int)($_POST['min_stock']   ?? 0);
+  $kategori    = trim($_POST['kategori'] ?? '');
 
   if ($nama === '') {
     $err = 'Nama tidak boleh kosong.';
   } else {
+    // Handle image upload
+    $gambar = $item['gambar'] ?? '';
+    if (isset($_FILES['gambar']) && $_FILES['gambar']['error'] === UPLOAD_ERR_OK) {
+        $tmp = $_FILES['gambar']['tmp_name'];
+        $ext = strtolower(pathinfo($_FILES['gambar']['name'], PATHINFO_EXTENSION));
+        $filename = preg_replace('/[^a-zA-Z0-9_-]/', '_', $kode) . '_' . time() . '.' . $ext;
+        $dest = __DIR__ . '/uploads/items/' . $filename;
+        if (!is_dir(__DIR__ . '/uploads/items/')) {
+            mkdir(__DIR__ . '/uploads/items/', 0777, true);
+        }
+        if (move_uploaded_file($tmp, $dest)) {
+            // Remove old image if exists
+            if (!empty($gambar) && file_exists(__DIR__ . '/uploads/items/' . $gambar)) {
+                @unlink(__DIR__ . '/uploads/items/' . $gambar);
+            }
+            $gambar = $filename;
+        }
+    }
+
     // Tambah updated_at supaya ikut berubah
     $upd = $pdo->prepare("
       UPDATE items
       SET nama = ?,
+          kategori = ?,
+          gambar = ?,
           unit = ?,
           harga_beli = ?,
           harga_jual1 = ?,
@@ -55,6 +77,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $upd->execute([
       $nama,
+      $kategori,
+      $gambar,
       $unit,
       $harga_beli,
       $h1,
@@ -91,7 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <mark style="background:#16a34a;color:#fff;"><?= htmlspecialchars($ok) ?></mark>
   <?php endif; ?>
 
-  <form method="post">
+  <form method="post" enctype="multipart/form-data">
     <!-- Kode ditampilkan (read-only) DAN dikirim lewat hidden input -->
     <label>Kode
       <input type="text" value="<?= htmlspecialchars($item['kode']) ?>" readonly>
@@ -100,6 +124,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <label>Nama
       <input type="text" name="nama" value="<?= htmlspecialchars($item['nama']) ?>">
+    </label>
+
+    <label>Kategori
+      <input type="text" name="kategori" value="<?= htmlspecialchars($item['kategori'] ?? '') ?>" placeholder="Contoh: ATK, Sembako, dll" list="catList">
+      <datalist id="catList">
+        <?php
+        try {
+            $cats = $pdo->query("SELECT DISTINCT kategori FROM items WHERE kategori IS NOT NULL AND kategori != ''")->fetchAll(PDO::FETCH_COLUMN);
+            foreach ($cats as $c) echo "<option value=\"".htmlspecialchars($c)."\">";
+        } catch(Exception $e) {}
+        ?>
+      </datalist>
+    </label>
+
+    <label>Gambar
+      <?php if (!empty($item['gambar']) && file_exists(__DIR__ . '/uploads/items/' . $item['gambar'])): ?>
+        <br><img src="uploads/items/<?= htmlspecialchars($item['gambar']) ?>" alt="Gambar <?= htmlspecialchars($item['nama']) ?>" style="max-height: 100px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border);">
+      <?php endif; ?>
+      <input type="file" name="gambar" accept="image/*">
+      <small class="muted">Biarkan kosong jika tidak ingin mengubah gambar.</small>
     </label>
 
     <label>Satuan

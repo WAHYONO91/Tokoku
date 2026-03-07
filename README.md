@@ -1,4 +1,4 @@
-\# TOKOAPP (PHP + MySQL) — POS / Manajemen Toko (Offline/LAN)
+\# TOKOAPP v1.2.0 (PHP + MySQL) — POS / Manajemen Toko (E-Commerce Integrated)
 
 
 

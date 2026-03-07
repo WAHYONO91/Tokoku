@@ -7,9 +7,10 @@ $setting = $pdo->query("SELECT * FROM settings WHERE id=1")->fetch(PDO::FETCH_AS
 $msg = '';
 $logo_error = '';
 
-// --- MIGRASI OTOMATIS: tambah kolom theme jika belum ada ---
+// --- MIGRASI OTOMATIS ---
 try {
   $pdo->exec("ALTER TABLE settings ADD COLUMN IF NOT EXISTS theme VARCHAR(20) DEFAULT 'dark'");
+  $pdo->exec("ALTER TABLE settings ADD COLUMN IF NOT EXISTS qris_url VARCHAR(255) DEFAULT ''");
 } catch (PDOException $e) {}
 
 // Refresh data setelah migrasi
@@ -108,6 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $invoice_prefix  = old_or('invoice_prefix', $setting['invoice_prefix'] ?? 'INV/');
   $qr_provider_url = old_or('qr_provider_url', $setting['qr_provider_url'] ?? 'https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=');
   $theme           = old_or('theme', $setting['theme'] ?? 'dark');
+  $qris_url        = $setting['qris_url'] ?? '';
 
   // Poin
   $points_per_rupiah_umum   = (float)old_or('points_per_rupiah_umum',   $points_per_rupiah_umum);
@@ -249,6 +251,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
   }
 
+  // QRIS upload
+  if (isset($_FILES['qris_file']) && $_FILES['qris_file']['error'] === UPLOAD_ERR_OK) {
+    $tmp  = $_FILES['qris_file']['tmp_name'];
+    $name = $_FILES['qris_file']['name'];
+    $ext  = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+    $allowed = ['png','jpg','jpeg','gif','webp'];
+    if (!in_array($ext, $allowed, true)) {
+      $logo_error .= ' Format file QRIS tidak didukung. Pakai png/jpg/jpeg/gif/webp.';
+    } else {
+      $uploadDir = __DIR__.'/uploads';
+      if (!is_dir($uploadDir)) { @mkdir($uploadDir, 0777, true); }
+      $newName = 'qris_'.date('Ymd_His').'.'.$ext;
+      $dest = $uploadDir . '/' . $newName;
+      if (move_uploaded_file($tmp, $dest)) {
+        $qris_url = '/tokoapp/uploads/'.$newName;
+      } else {
+        $logo_error .= ' Gagal upload gambar QRIS.';
+      }
+    }
+  }
+
   // SIMPAN
   try {
     $stmt = $pdo->prepare("
@@ -286,7 +309,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
              print_store_name_font_size_px  = ?,
              print_store_name_bold          = ?,
              print_store_name_align         = ?,
-             theme                          = ?
+             theme                          = ?,
+             qris_url                       = ?
        WHERE id=1
     ");
     $stmt->execute([
@@ -323,7 +347,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $store_name_font_size,
       $store_name_bold,
       $store_name_align,
-      $theme
+      $theme,
+      $qris_url
     ]);
     log_activity($pdo, 'UPDATE_SETTINGS', "Mengubah pengaturan toko (Nama: $store_name)");
     
@@ -409,6 +434,19 @@ require_once __DIR__.'/includes/header.php';
       <div style="margin-bottom:1rem;">
         <strong>Logo sekarang:</strong><br>
         <img src="<?= htmlspecialchars($setting['logo_url']) ?>" alt="Logo" style="max-height:80px;">
+      </div>
+    <?php endif; ?>
+
+    <label>
+      Gambar QRIS Toko (Untuk checkout Online Store)
+      <input type="file" name="qris_file" accept=".png,.jpg,.jpeg,.gif,.webp">
+      <small>Biarkan kosong jika tidak mengganti gambar QRIS saat ini.</small>
+    </label>
+    
+    <?php if (!empty($setting['qris_url'])): ?>
+      <div style="margin-bottom:1rem;">
+        <strong>QRIS sekarang:</strong><br>
+        <img src="<?= htmlspecialchars($setting['qris_url']) ?>" alt="QRIS" style="max-height:120px; border:1px solid #ccc; padding:4px; border-radius:4px;">
       </div>
     <?php endif; ?>
 

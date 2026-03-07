@@ -85,7 +85,32 @@ if (!$isPicker && $_SERVER['REQUEST_METHOD'] === 'POST') {
   $min_stock   = (!isset($_POST['min_stock'])   || $_POST['min_stock']   === '') ? 0 : max(0, (int)$_POST['min_stock']);
   $stok_toko   = (!isset($_POST['stok_toko'])   || $_POST['stok_toko']   === '') ? 0 : max(0, (int)$_POST['stok_toko']);
   $stok_gudang = (!isset($_POST['stok_gudang']) || $_POST['stok_gudang'] === '') ? 0 : max(0, (int)$_POST['stok_gudang']);
+  $kategori    = trim($_POST['kategori'] ?? '');
   // ======================================================================
+
+  $gambar = '';
+  if ($original_kode !== '') {
+      $stG = $pdo->prepare("SELECT gambar FROM items WHERE kode = ?");
+      $stG->execute([$original_kode]);
+      $gambar = $stG->fetchColumn() ?: '';
+  }
+
+  // Handle upload
+  if (isset($_FILES['gambar']) && $_FILES['gambar']['error'] === UPLOAD_ERR_OK) {
+      $tmp = $_FILES['gambar']['tmp_name'];
+      $ext = strtolower(pathinfo($_FILES['gambar']['name'], PATHINFO_EXTENSION));
+      $filename = preg_replace('/[^a-zA-Z0-9_-]/', '_', $kode ?: $original_kode) . '_' . time() . '.' . $ext;
+      $dest = __DIR__ . '/uploads/items/' . $filename;
+      if (!is_dir(__DIR__ . '/uploads/items/')) {
+          mkdir(__DIR__ . '/uploads/items/', 0777, true);
+      }
+      if (move_uploaded_file($tmp, $dest)) {
+          if (!empty($gambar) && file_exists(__DIR__ . '/uploads/items/' . $gambar)) {
+              @unlink(__DIR__ . '/uploads/items/' . $gambar);
+          }
+          $gambar = $filename;
+      }
+  }
 
   if ($kode === '' || $nama === '' || $unit_code === '') {
     $err = 'Kolom Kode, Nama, dan Unit wajib diisi.';
@@ -98,6 +123,8 @@ if (!$isPicker && $_SERVER['REQUEST_METHOD'] === 'POST') {
              SET kode          = ?,
                  barcode       = ?,
                  nama          = ?,
+                 kategori      = ?,
+                 gambar        = ?,
                  supplier_kode = ?,
                  unit_code     = ?,
                  harga_beli    = ?,
@@ -113,6 +140,8 @@ if (!$isPicker && $_SERVER['REQUEST_METHOD'] === 'POST') {
           $kode,
           $barcode,
           $nama,
+          $kategori,
+          $gambar,
           $supplier_kode !== '' ? $supplier_kode : null,
           $unit_code,
           $harga_beli,
@@ -138,16 +167,18 @@ if (!$isPicker && $_SERVER['REQUEST_METHOD'] === 'POST') {
         // === INSERT / UPDATE BIASA (kode sama atau tambah baru) ===
         $stmt = $pdo->prepare("
           INSERT INTO items
-            (kode, barcode, nama, supplier_kode, unit_code,
+            (kode, barcode, nama, kategori, gambar, supplier_kode, unit_code,
              harga_beli, harga_jual1, harga_jual2, harga_jual3, harga_jual4,
              min_stock, created_at, updated_at)
           VALUES
-            (?,?,?,?,?,
+            (?,?,?,?,?,?,?,
              ?,?,?,?,?,
              ?, NOW(), NOW())
           ON DUPLICATE KEY UPDATE
             barcode       = VALUES(barcode),
             nama          = VALUES(nama),
+            kategori      = VALUES(kategori),
+            gambar        = VALUES(gambar),
             supplier_kode = VALUES(supplier_kode),
             unit_code     = VALUES(unit_code),
             harga_beli    = VALUES(harga_beli),
@@ -162,6 +193,8 @@ if (!$isPicker && $_SERVER['REQUEST_METHOD'] === 'POST') {
           $kode,
           $barcode,
           $nama,
+          $kategori,
+          $gambar,
           $supplier_kode !== '' ? $supplier_kode : null,
           $unit_code,
           $harga_beli,
@@ -396,7 +429,7 @@ table td .btn-print-barcode {
 
   <?php if (!$isPicker): ?>
   <!-- ===== KARTU FORM (RAPI) ===== -->
-  <form method="post" class="form-card" autocomplete="off">
+  <form method="post" class="form-card" autocomplete="off" enctype="multipart/form-data">
     <input type="hidden" name="original_kode" value="<?= htmlspecialchars(val($editRow,'kode','')) ?>">
 
     <div class="grid-2">
@@ -409,6 +442,25 @@ table td .btn-print-barcode {
       </label>
       <label>Nama
         <input name="nama" required value="<?= htmlspecialchars(val($editRow,'nama','')) ?>" placeholder="Nama barang">
+      </label>
+      <label>Kategori
+        <input name="kategori" value="<?= htmlspecialchars(val($editRow,'kategori','')) ?>" placeholder="Contoh: ATK" list="catList">
+        <datalist id="catList">
+          <?php
+          try {
+              $cats = $pdo->query("SELECT DISTINCT kategori FROM items WHERE kategori IS NOT NULL AND kategori != ''")->fetchAll(PDO::FETCH_COLUMN);
+              foreach ($cats as $c) echo "<option value=\"".htmlspecialchars($c)."\">";
+          } catch(Exception $e) {}
+          ?>
+        </datalist>
+      </label>
+      <label>Gambar Baru
+        <input type="file" name="gambar" accept="image/*" style="padding:0.4rem;">
+        <?php if(!empty($editRow['gambar']) && file_exists(__DIR__.'/uploads/items/'.$editRow['gambar'])): ?>
+          <small class="muted">Ada gambar: <?= htmlspecialchars($editRow['gambar']) ?></small>
+        <?php else: ?>
+          <small class="muted">Belum ada gambar (opsional)</small>
+        <?php endif; ?>
       </label>
       <label>Supplier
         <select name="supplier_kode">
@@ -484,6 +536,8 @@ table td .btn-print-barcode {
       <tr>
         <th>Kode</th>
         <th>Nama</th>
+        <th>Kategori</th>
+        <th>Gambar</th>
         <th>Supplier</th>
         <th>Unit</th>
         <th>Tgl Masuk</th>
@@ -521,6 +575,14 @@ table td .btn-print-barcode {
           >
             <td><?= htmlspecialchars($kodeRow) ?></td>
             <td><?= htmlspecialchars($r['nama']) ?></td>
+            <td><?= htmlspecialchars($r['kategori'] ?? '-') ?></td>
+            <td>
+              <?php if(!empty($r['gambar']) && file_exists(__DIR__.'/uploads/items/'.$r['gambar'])): ?>
+                <img src="uploads/items/<?=htmlspecialchars($r['gambar'])?>" style="height:40px; border-radius:4px; border:1px solid var(--card-bd);">
+              <?php else: ?>
+                -
+              <?php endif; ?>
+            </td>
             <td><?= htmlspecialchars($supplierLabel) ?></td>
             <td><?= htmlspecialchars($r['unit_code']) ?></td>
             <td><?= htmlspecialchars($tglMasukFmt) ?></td>

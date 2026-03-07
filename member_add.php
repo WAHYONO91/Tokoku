@@ -17,15 +17,18 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
     $jenis = 'umum';
   }
 
+  $password = trim($_POST['password'] ?? '');
+  $password_hash = $password !== '' ? password_hash($password, PASSWORD_DEFAULT) : null;
+
   if($kode==='' || $nama===''){
     $err = 'Kode dan Nama wajib diisi.';
   } else {
     try{
       $stmt = $pdo->prepare("
-        INSERT INTO members (kode, nama, jenis, alamat, telp, points, created_at)
-        VALUES (?,?,?,?,?,?,NOW())
+        INSERT INTO members (kode, nama, jenis, alamat, telp, points, password_hash, created_at)
+        VALUES (?,?,?,?,?,?,?,NOW())
       ");
-      $stmt->execute([$kode,$nama,$jenis,$alamat,$telp,$points]);
+      $stmt->execute([$kode,$nama,$jenis,$alamat,$telp,$points,$password_hash]);
       $ok = 'Member berhasil ditambahkan.';
     } catch(PDOException $e){
       $err = 'Gagal simpan member: '.$e->getMessage();
@@ -72,9 +75,15 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
     <textarea id="alamat" name="alamat" rows="2"></textarea>
   </label>
 
-  <label>Poin Awal
-    <input id="points" type="number" name="points" value="0">
-  </label>
+  <div class="grid">
+    <label>Poin Awal
+      <input id="points" type="number" name="points" value="0">
+    </label>
+
+    <label>Password Akun (Opsional)
+      <input id="password" type="password" name="password" placeholder="Kosongkan jika tidak butuh login">
+    </label>
+  </div>
 
   <button id="btnSimpan">Simpan</button>
   <a id="btnKembali" href="members.php">Kembali</a>

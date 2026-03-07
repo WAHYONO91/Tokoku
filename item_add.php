@@ -16,12 +16,29 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
   $h4 = (int)($_POST['harga_jual4'] ?? 0);
   $min_stock = (int)($_POST['min_stock'] ?? 0);
 
+  $kategori = trim($_POST['kategori'] ?? '');
+
   if($kode==='' || $nama===''){
     $err = 'Kode dan nama wajib diisi.';
   } else {
+    // Handle image upload
+    $gambar = '';
+    if (isset($_FILES['gambar']) && $_FILES['gambar']['error'] === UPLOAD_ERR_OK) {
+        $tmp = $_FILES['gambar']['tmp_name'];
+        $ext = strtolower(pathinfo($_FILES['gambar']['name'], PATHINFO_EXTENSION));
+        $filename = preg_replace('/[^a-zA-Z0-9_-]/', '_', $kode) . '_' . time() . '.' . $ext;
+        $dest = __DIR__ . '/uploads/items/' . $filename;
+        if (!is_dir(__DIR__ . '/uploads/items/')) {
+            mkdir(__DIR__ . '/uploads/items/', 0777, true);
+        }
+        if (move_uploaded_file($tmp, $dest)) {
+            $gambar = $filename;
+        }
+    }
+
     try{
-      $stmt = $pdo->prepare("INSERT INTO items(kode,nama,unit,harga_beli,harga_jual1,harga_jual2,harga_jual3,harga_jual4,min_stock,created_at) VALUES(?,?,?,?,?,?,?,?,?,NOW())");
-      $stmt->execute([$kode,$nama,$unit,$harga_beli,$h1,$h2,$h3,$h4,$min_stock]);
+      $stmt = $pdo->prepare("INSERT INTO items(kode,nama,kategori,gambar,unit,harga_beli,harga_jual1,harga_jual2,harga_jual3,harga_jual4,min_stock,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,NOW())");
+      $stmt->execute([$kode,$nama,$kategori,$gambar,$unit,$harga_beli,$h1,$h2,$h3,$h4,$min_stock]);
       // buat stok gudang & toko 0
       ensure_stock_rows($pdo, $kode);
       $ok = 'Barang berhasil disimpan.';
@@ -35,13 +52,27 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
   <h3>Tambah Barang</h3>
   <?php if($err): ?><mark><?=htmlspecialchars($err)?></mark><?php endif; ?>
   <?php if($ok): ?><mark style="background:#16a34a;color:#fff;"><?=htmlspecialchars($ok)?></mark><?php endif; ?>
-  <form method="post">
+  <form method="post" enctype="multipart/form-data">
     <div class="grid">
       <label>Kode
         <input type="text" name="kode" required>
       </label>
       <label>Nama
         <input type="text" name="nama" required>
+      </label>
+      <label>Kategori
+        <input type="text" name="kategori" placeholder="Contoh: ATK, Sembako, dll" list="catList">
+        <datalist id="catList">
+          <?php
+          try {
+              $cats = $pdo->query("SELECT DISTINCT kategori FROM items WHERE kategori IS NOT NULL AND kategori != ''")->fetchAll(PDO::FETCH_COLUMN);
+              foreach ($cats as $c) echo "<option value=\"".htmlspecialchars($c)."\">";
+          } catch(Exception $e) {}
+          ?>
+        </datalist>
+      </label>
+      <label>Gambar
+        <input type="file" name="gambar" accept="image/*">
       </label>
       <label>Satuan
         <select name="unit">

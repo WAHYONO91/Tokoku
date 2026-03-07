@@ -228,7 +228,12 @@ $app_logo  = !empty($header_setting['logo_url']) ? $header_setting['logo_url'] :
   <a class="menu-card" href="member_ar_list.php"><span class="menu-icon">🧾</span>Piutang Member</a>
   <?php endif; ?>
   
+  <?php if (module_active('ONLINE_ORDERS')): ?>
+  <a class="menu-card" href="online_orders.php" style="background:#1e3a8a; border-color:#1e40af;"><span class="menu-icon">🛍️</span>Pesanan Online</a>
+  <?php endif; ?>
+  
   <?php if (module_active('TAGIHAN_MEMBER')): ?>
+
   <a class="menu-card" href="member_ar_billing.php">
     <span class="menu-icon">📌</span><span>Tagihan Member</span>
   </a>

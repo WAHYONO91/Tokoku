@@ -132,6 +132,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       header('Location: member_edit.php?kode='.urlencode($form['kode']).'&ok=1');
       exit;
     }
+    
+    // Update password if provided
+    $password = trim($_POST['password'] ?? '');
+    if ($ok && $password !== '') {
+        try {
+            $phash = password_hash($password, PASSWORD_DEFAULT);
+            $pdo->prepare("UPDATE members SET password_hash = ? WHERE kode = ?")->execute([$phash, $form['kode']]);
+            $ok = 'Perubahan member dan password berhasil disimpan.';
+        } catch (Exception $e) {
+            $err = 'Error mengupdate password: ' . $e->getMessage();
+        }
+    }
 
     // reload data dari DB setelah update sukses (kode tidak berubah)
     if ($ok) {
@@ -208,6 +220,10 @@ require_once __DIR__.'/includes/header.php';
       <div class="grid">
         <label>Poin
           <input id="points" type="number" name="points" min="0" value="<?=htmlspecialchars((string)($form['points'] ?? 0))?>">
+        </label>
+        
+        <label>Ubah Password (Opsional)
+          <input id="password" type="password" name="password" placeholder="Isi untuk mengubah password, kosongkan jika tidak ubah">
         </label>
       </div>
 
