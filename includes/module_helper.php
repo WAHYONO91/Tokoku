@@ -24,6 +24,7 @@ $MENU_MASTER = [
     'AUDIT_TRAIL'      => 'Audit Trail',
     'BACKUP'           => 'Backup Database',
     'ONLINE_ORDERS'    => 'Pesanan Online',
+    'STOCK_OPNAME'     => 'Stock Opname',
     'MODULE_MGMT'      => 'Manajemen Modul',
 ];
 

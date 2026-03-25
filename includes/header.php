@@ -41,6 +41,21 @@ $app_logo  = !empty($header_setting['logo_url']) ? $header_setting['logo_url'] :
     :root {
       --pico-font-size:18px;
     }
+    
+    /* Login & Dashboard Background Variables */
+    :root {
+      --login-overlay-1: <?= $app_theme === 'dark' ? 'rgba(15,23,42,.78)' : 'rgba(226,234,245,.82)' ?>;
+      --login-overlay-2: <?= $app_theme === 'dark' ? 'rgba(15,23,42,.35)' : 'rgba(226,234,245,.50)' ?>;
+    }
+
+    body {
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      background-image: 
+        linear-gradient(120deg, var(--login-overlay-1), var(--login-overlay-2)),
+        url("<?= htmlspecialchars($app_logo) ?>");
+    }
     <?php if ($app_theme === 'dark'): ?>
     :root {
       --pico-background-color:#0f172a;
@@ -194,6 +209,10 @@ $app_logo  = !empty($header_setting['logo_url']) ? $header_setting['logo_url'] :
 
   <?php if (module_active('STOCK')): ?>
   <a class="menu-card" href="stock_transfer.php"><span class="menu-icon">🔁</span>Mutasi</a>
+  <?php endif; ?>
+
+  <?php if (module_active('STOCK_OPNAME')): ?>
+  <a class="menu-card" href="stock_opname.php"><span class="menu-icon">📉</span>Stock Opname</a>
   <?php endif; ?>
 
   <?php if (module_active('POS_DISPLAY')): ?>
