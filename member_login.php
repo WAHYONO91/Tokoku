@@ -329,6 +329,12 @@ require_once __DIR__ . '/includes/shop_header.php';
 
 <div class="member-login-container">
     <div class="member-login-card">
+        <div style="margin-bottom: 0.75rem;">
+            <a href="shop.php" style="font-size:0.84rem; font-weight:600; color:var(--text-muted); text-decoration:none; display:inline-flex; align-items:center; gap:0.35rem; transition:color 0.2s ease;" onmouseover="this.style.color='var(--brand-color)'" onmouseout="this.style.color='var(--text-muted)'">
+                ← Kembali Belanja ke Toko
+            </a>
+        </div>
+
         <div class="member-login-header">
             <?php if (!empty($logo_url) && file_exists(__DIR__ . '/' . $logo_url)): ?>
                 <img src="<?= htmlspecialchars($logo_url) ?>" alt="Logo Toko" class="member-brand-logo">
@@ -370,6 +376,10 @@ require_once __DIR__ . '/includes/shop_header.php';
             <button type="submit" class="btn-submit-member">
                 🔑 Masuk Akun Member
             </button>
+            
+            <a href="shop.php" style="display:flex; align-items:center; justify-content:center; gap:0.4rem; width:100%; margin-top:0.75rem; padding:0.65rem 1rem; font-size:0.88rem; font-weight:600; color:var(--text-main, #334155); background:var(--input-bg, #f8fafc); border:1px solid var(--card-bd, #cbd5e1); border-radius:12px; text-decoration:none; transition:all 0.2s ease;">
+                🏪 Kembali ke Katalog Produk
+            </a>
         </form>
 
         <div class="member-features">
