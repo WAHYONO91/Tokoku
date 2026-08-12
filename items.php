@@ -95,29 +95,49 @@ if (!$isPicker && $_SERVER['REQUEST_METHOD'] === 'POST') {
       $gambar = $stG->fetchColumn() ?: '';
   }
 
-  // Handle upload (from camera or gallery)
-  $uploadedFile = null;
-  if (isset($_FILES['gambar_camera']) && $_FILES['gambar_camera']['error'] === UPLOAD_ERR_OK) {
-      $uploadedFile = $_FILES['gambar_camera'];
-  } elseif (isset($_FILES['gambar_file']) && $_FILES['gambar_file']['error'] === UPLOAD_ERR_OK) {
-      $uploadedFile = $_FILES['gambar_file'];
-  } elseif (isset($_FILES['gambar']) && $_FILES['gambar']['error'] === UPLOAD_ERR_OK) {
-      $uploadedFile = $_FILES['gambar'];
-  }
-
-  if ($uploadedFile) {
-      $tmp = $uploadedFile['tmp_name'];
-      $ext = strtolower(pathinfo($uploadedFile['name'], PATHINFO_EXTENSION));
-      $filename = preg_replace('/[^a-zA-Z0-9_-]/', '_', $kode ?: $original_kode) . '_' . time() . '.' . $ext;
-      $dest = __DIR__ . '/uploads/items/' . $filename;
-      if (!is_dir(__DIR__ . '/uploads/items/')) {
-          mkdir(__DIR__ . '/uploads/items/', 0777, true);
-      }
-      if (move_uploaded_file($tmp, $dest)) {
-          if (!empty($gambar) && file_exists(__DIR__ . '/uploads/items/' . $gambar)) {
-              @unlink(__DIR__ . '/uploads/items/' . $gambar);
+  // Handle upload (Base64 camera snapshot, native camera, or file upload)
+  if (!empty($_POST['gambar_base64']) && strpos($_POST['gambar_base64'], 'data:image/') === 0) {
+      $base64Data = $_POST['gambar_base64'];
+      list($type, $data) = explode(';', $base64Data);
+      list(, $data)      = explode(',', $data);
+      $decodedData = base64_decode($data);
+      if ($decodedData !== false) {
+          $filename = preg_replace('/[^a-zA-Z0-9_-]/', '_', $kode ?: $original_kode) . '_' . time() . '.jpg';
+          $dest = __DIR__ . '/uploads/items/' . $filename;
+          if (!is_dir(__DIR__ . '/uploads/items/')) {
+              mkdir(__DIR__ . '/uploads/items/', 0777, true);
           }
-          $gambar = $filename;
+          if (file_put_contents($dest, $decodedData)) {
+              if (!empty($gambar) && file_exists(__DIR__ . '/uploads/items/' . $gambar)) {
+                  @unlink(__DIR__ . '/uploads/items/' . $gambar);
+              }
+              $gambar = $filename;
+          }
+      }
+  } else {
+      $uploadedFile = null;
+      if (isset($_FILES['gambar_camera']) && $_FILES['gambar_camera']['error'] === UPLOAD_ERR_OK) {
+          $uploadedFile = $_FILES['gambar_camera'];
+      } elseif (isset($_FILES['gambar_file']) && $_FILES['gambar_file']['error'] === UPLOAD_ERR_OK) {
+          $uploadedFile = $_FILES['gambar_file'];
+      } elseif (isset($_FILES['gambar']) && $_FILES['gambar']['error'] === UPLOAD_ERR_OK) {
+          $uploadedFile = $_FILES['gambar'];
+      }
+
+      if ($uploadedFile) {
+          $tmp = $uploadedFile['tmp_name'];
+          $ext = strtolower(pathinfo($uploadedFile['name'], PATHINFO_EXTENSION));
+          $filename = preg_replace('/[^a-zA-Z0-9_-]/', '_', $kode ?: $original_kode) . '_' . time() . '.' . $ext;
+          $dest = __DIR__ . '/uploads/items/' . $filename;
+          if (!is_dir(__DIR__ . '/uploads/items/')) {
+              mkdir(__DIR__ . '/uploads/items/', 0777, true);
+          }
+          if (move_uploaded_file($tmp, $dest)) {
+              if (!empty($gambar) && file_exists(__DIR__ . '/uploads/items/' . $gambar)) {
+                  @unlink(__DIR__ . '/uploads/items/' . $gambar);
+              }
+              $gambar = $filename;
+          }
       }
   }
 
@@ -506,16 +526,24 @@ table td .btn-print-barcode {
           ?>
         </datalist>
       </label>
-      <label style="grid-column: 1 / -1;">Foto / Gambar Barang
+      <label style="grid-column: 1 / -1;">Foto / Gambar Barang (Kamera HP / File)
+        <input type="hidden" name="gambar_base64" id="gambarBase64Input" value="">
         <div style="display:flex; gap:0.6rem; flex-wrap:wrap; align-items:center; margin-top:0.4rem;">
-          <label class="btn-camera" style="margin:0; cursor:pointer; background:linear-gradient(135deg, #0ea5e9, #0284c7); color:#fff; padding:0.6rem 1rem; border-radius:10px; font-size:0.88rem; font-weight:700; display:inline-flex; align-items:center; gap:0.4rem; box-shadow:0 4px 12px rgba(2,132,199,0.3); transition:all 0.2s;">
-            📸 Ambil Foto (Kamera HP)
-            <input type="file" name="gambar_camera" accept="image/*" capture="environment" style="display:none;" onchange="handleItemImagePreview(this)">
+          <!-- 1. Direct Native Smartphone Camera App -->
+          <label class="btn-camera" style="margin:0; cursor:pointer; background:linear-gradient(135deg, #0ea5e9, #0284c7); color:#fff; padding:0.65rem 1.1rem; border-radius:10px; font-size:0.88rem; font-weight:700; display:inline-flex; align-items:center; gap:0.4rem; box-shadow:0 4px 12px rgba(2,132,199,0.35); transition:all 0.2s;">
+            📸 Buka Kamera HP
+            <input type="file" name="gambar_camera" id="gambarCameraInput" accept="image/*" capture="environment" style="display:none;" onchange="handleItemImagePreview(this)">
           </label>
 
-          <label class="btn-gallery" style="margin:0; cursor:pointer; background:var(--input-bg); border:1px solid var(--card-bd); color:var(--text-main); padding:0.6rem 1rem; border-radius:10px; font-size:0.88rem; font-weight:600; display:inline-flex; align-items:center; gap:0.4rem; transition:all 0.2s;">
-            📁 Pilih dari Galeri / PC
-            <input type="file" name="gambar_file" accept="image/*" style="display:none;" onchange="handleItemImagePreview(this)">
+          <!-- 2. In-Browser WebRTC Live Stream Camera -->
+          <button type="button" onclick="startWebCamModal()" style="margin:0; cursor:pointer; background:linear-gradient(135deg, #10b981, #059669); color:#fff; padding:0.65rem 1.1rem; border-radius:10px; font-size:0.88rem; font-weight:700; border:none; display:inline-flex; align-items:center; gap:0.4rem; box-shadow:0 4px 12px rgba(16,185,129,0.35);">
+            📹 Foto Langsung di Web
+          </button>
+
+          <!-- 3. Choose File / Gallery PC -->
+          <label class="btn-gallery" style="margin:0; cursor:pointer; background:var(--input-bg); border:1px solid var(--card-bd); color:var(--text-main); padding:0.65rem 1.1rem; border-radius:10px; font-size:0.88rem; font-weight:600; display:inline-flex; align-items:center; gap:0.4rem; transition:all 0.2s;">
+            📁 Pilih Galeri / PC
+            <input type="file" name="gambar_file" id="gambarFileInput" accept="image/*" style="display:none;" onchange="handleItemImagePreview(this)">
           </label>
         </div>
 
@@ -936,6 +964,30 @@ function printBarcode(kode, barcode) {
 </script>
 <?php endif; ?>
 
+<!-- ===== WEBRTC LIVE CAMERA MODAL ===== -->
+<div id="webcamModalOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.85); backdrop-filter:blur(6px); z-index:99999; align-items:center; justify-content:center; padding:1rem;">
+  <div style="background:var(--card-bg, #0f172a); border:1px solid var(--card-bd, #1f2937); border-radius:20px; width:100%; max-width:480px; padding:1.25rem; text-align:center; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);">
+    <div style="font-weight:800; font-size:1.1rem; color:var(--text-main); margin-bottom:0.75rem; display:flex; justify-content:space-between; align-items:center;">
+      <span>📷 Kamera Live Foto Barang</span>
+      <button type="button" onclick="stopWebCamModal()" style="background:transparent; border:none; color:var(--text-muted); font-size:1.5rem; cursor:pointer;">&times;</button>
+    </div>
+    
+    <div style="position:relative; width:100%; background:#000; border-radius:12px; overflow:hidden; aspect-ratio:4/3;">
+      <video id="webcamVideo" autoplay playsinline style="width:100%; height:100%; object-fit:cover;"></video>
+      <canvas id="webcamCanvas" style="display:none;"></canvas>
+    </div>
+
+    <div style="display:flex; gap:0.6rem; margin-top:1rem;">
+      <button type="button" onclick="snapWebCamPhoto()" style="flex:1; background:linear-gradient(135deg,#10b981,#059669); color:#fff; border:none; padding:0.75rem; border-radius:10px; font-weight:700; font-size:0.95rem; cursor:pointer;">
+        📸 Jepret Foto
+      </button>
+      <button type="button" onclick="stopWebCamModal()" style="background:var(--input-bg); border:1px solid var(--card-bd); color:var(--text-muted); padding:0.75rem 1rem; border-radius:10px; font-weight:600; font-size:0.9rem; cursor:pointer;">
+        Tutup
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
 function handleItemImagePreview(input) {
   if (input.files && input.files[0]) {
@@ -947,9 +999,69 @@ function handleItemImagePreview(input) {
         img.src = e.target.result;
         box.style.display = 'block';
       }
+      // Reset base64 input if file is picked
+      const b64Input = document.getElementById('gambarBase64Input');
+      if(b64Input) b64Input.value = '';
     };
     reader.readAsDataURL(input.files[0]);
   }
+}
+
+let webcamStream = null;
+
+function startWebCamModal() {
+  const overlay = document.getElementById('webcamModalOverlay');
+  const video = document.getElementById('webcamVideo');
+  if (!overlay || !video) return;
+
+  overlay.style.display = 'flex';
+
+  navigator.mediaDevices.getUserMedia({
+    video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+  })
+  .then(stream => {
+    webcamStream = stream;
+    video.srcObject = stream;
+  })
+  .catch(err => {
+    alert('Gagal mengakses kamera: ' + err.message + '\n\nSilakan pilih tombol "📸 Buka Kamera HP" untuk membuka aplikasi Kamera HP langsung.');
+    stopWebCamModal();
+  });
+}
+
+function stopWebCamModal() {
+  const overlay = document.getElementById('webcamModalOverlay');
+  if (overlay) overlay.style.display = 'none';
+  if (webcamStream) {
+    webcamStream.getTracks().forEach(track => track.stop());
+    webcamStream = null;
+  }
+}
+
+function snapWebCamPhoto() {
+  const video = document.getElementById('webcamVideo');
+  const canvas = document.getElementById('webcamCanvas');
+  const img = document.getElementById('itemImagePreviewImg');
+  const box = document.getElementById('itemImagePreviewBox');
+  const b64Input = document.getElementById('gambarBase64Input');
+
+  if (!video || !canvas) return;
+
+  canvas.width = video.videoWidth || 640;
+  canvas.height = video.videoHeight || 480;
+
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+  if (img && box && b64Input) {
+    img.src = dataUrl;
+    box.style.display = 'block';
+    b64Input.value = dataUrl;
+  }
+
+  stopWebCamModal();
 }
 </script>
 
