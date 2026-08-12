@@ -292,14 +292,24 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
       min-width: 118px;
     }
 
-    .panel-bottom{ padding: .75rem .75rem; }
+    .panel-bottom{ padding: 0.85rem; }
     .panel-bottom .kps{
-      display:grid;
-      grid-template-columns: repeat(3, minmax(240px, 1fr));
-      gap:.20rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 0.65rem;
+      width: 100%;
+      box-sizing: border-box;
     }
-    @media (max-width:1200px){
-      .panel-bottom .kps{ grid-template-columns: repeat(2, minmax(240px,1fr)); }
+    .panel-bottom label {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      font-weight: 600;
+      font-size: 0.82rem;
+      color: var(--text);
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
     }
     @media (max-width:640px){
       .panel-bottom .kps{ grid-template-columns: 1fr; }
@@ -310,15 +320,36 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
 
     .panel-bottom input:not([type="checkbox"]):not([type="radio"]),
     .panel-bottom select{
-      font-size: 1.0rem;
-      padding: .62rem .7rem;
-      border-radius: .55rem;
+      font-size: 0.92rem;
+      padding: 0.55rem 0.65rem;
+      border-radius: 0.55rem;
       background: <?= $app_theme === 'dark' ? '#091120' : '#ffffff' ?>;
       border:1px solid var(--card-bd);
       color:var(--text);
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
     }
 
-    .row{display:flex;gap:.4rem;align-items:center}
+    .row{
+      display: flex;
+      gap: 0.35rem;
+      align-items: center;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .row input {
+      flex: 1 1 0%;
+      min-width: 0 !important;
+      width: 100%;
+    }
+    .row select {
+      flex-shrink: 0;
+      width: auto !important;
+      min-width: 55px !important;
+      padding: 0.55rem 0.4rem !important;
+    }
     .muted{font-size:.8rem;color:var(--muted)}
     .btn{
       background: <?= $app_theme === 'dark' ? '#1f2b3e' : '#bae6fd' ?>;
@@ -353,7 +384,23 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
       background:rgba(250,204,21,0.07);
     }
 
-    .memberRow{ display:flex; gap:.4rem; align-items:center; }
+    .memberRow{
+      display: flex;
+      gap: 0.35rem;
+      align-items: center;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .memberRow input {
+      flex: 1 1 0%;
+      min-width: 0 !important;
+      width: 100%;
+    }
+    .memberRow button {
+      flex-shrink: 0;
+      padding: 0.55rem 0.65rem !important;
+      font-size: 0.85rem !important;
+    }
     .btn-mini{ padding:.55rem .7rem; font-size:.95rem; white-space:nowrap; }
 
     .table-topinfo{
@@ -1057,16 +1104,14 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
 
             <!-- Poin, Diskon, PPN -->
             <div class="kps">
-              <div>
-                <div class="muted">Poin Ditukar</div>
+              <label>Poin Ditukar
                 <div class="row">
                   <input type="number" id="poin_ditukar" min="0" value="0" inputmode="numeric">
                 </div>
-                <div class="muted">Potongan dari Poin: <span id="poin_potongan_view">0</span></div>
-              </div>
+                <div class="muted" style="font-size:0.75rem;">Potongan: <span id="poin_potongan_view">0</span></div>
+              </label>
 
-              <div>
-                <div class="muted">Diskon</div>
+              <label>Diskon
                 <div class="row">
                   <input type="number" id="discount" min="0" value="0" inputmode="numeric">
                   <select id="discountMode" aria-label="Mode Diskon">
@@ -1074,10 +1119,9 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
                     <option value="pct">%</option>
                   </select>
                 </div>
-              </div>
+              </label>
 
-              <div>
-                <div class="muted">PPN</div>
+              <label>PPN
                 <div class="row">
                   <input type="number" id="tax" min="0" value="0" inputmode="numeric">
                   <select id="taxMode" aria-label="Mode Pajak">
@@ -1085,21 +1129,19 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
                     <option value="pct">%</option>
                   </select>
                 </div>
-              </div>
+              </label>
             </div>
 
             <!-- Metode Pembayaran -->
             <div class="kps">
-              <div>
-                <div class="muted">Metode Pembayaran</div>
+              <label>Metode Pembayaran
                 <select id="payMode">
                   <option value="cash">Tunai</option>
                   <option value="ar">Piutang Member</option>
                 </select>
-              </div>
+              </label>
 
-              <div>
-                <div class="muted">Tunai</div>
+              <label>Tunai
                 <input type="text" id="tunai" value="0" inputmode="numeric">
                 <div class="quick-cash-row" style="display:flex;gap:0.25rem;margin-top:0.35rem;flex-wrap:wrap;">
                   <button type="button" class="btn btn-mini" onclick="setQuickCash('pas')" style="padding:0.2rem 0.4rem;font-size:0.75rem;cursor:pointer;">Uang Pas</button>
@@ -1107,12 +1149,11 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
                   <button type="button" class="btn btn-mini" onclick="setQuickCash(50000)" style="padding:0.2rem 0.4rem;font-size:0.75rem;cursor:pointer;">50k</button>
                   <button type="button" class="btn btn-mini" onclick="setQuickCash(100000)" style="padding:0.2rem 0.4rem;font-size:0.75rem;cursor:pointer;">100k</button>
                 </div>
-              </div>
+              </label>
 
-              <div>
-                <div class="muted">Kembalian</div>
+              <label>Kembalian
                 <input type="text" id="kembalian" readonly value="0">
-              </div>
+              </label>
             </div>
 
             <!-- Checkout Action Button -->
