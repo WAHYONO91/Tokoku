@@ -586,31 +586,39 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
       color: #000 !important;
     }
 
-    /* Camera Modal Styles */
+    /* Camera Modal Styles (Strict Centering & Mobile Fit) */
     #cameraModal {
       display: none;
       position: fixed;
-      inset: 0;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100vw;
+      height: 100vh;
       z-index: 99999;
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(0, 0, 0, 0.75);
       backdrop-filter: blur(5px);
       align-items: center;
       justify-content: center;
-      padding: 1rem;
+      padding: 0.75rem;
+      box-sizing: border-box;
     }
     #cameraModal.show {
-      display: flex;
+      display: flex !important;
     }
     #cameraModal .modal-content {
       background: var(--card-bg);
       border: 1px solid var(--card-bd);
-      border-radius: 0.75rem;
+      border-radius: 1rem;
       width: 100%;
-      max-width: 480px;
+      max-width: 440px;
+      margin: auto !important;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
       overflow: hidden;
+      box-sizing: border-box;
     }
     #cameraModal .modal-header {
       padding: 0.75rem 1rem;
@@ -618,6 +626,7 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      box-sizing: border-box;
     }
     #cameraModal .modal-header h3 {
       margin: 0;
@@ -637,37 +646,67 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
+      box-sizing: border-box;
+      width: 100%;
+      max-width: 100%;
+      overflow: hidden;
     }
     #camera-select-row {
       display: flex;
       flex-direction: column;
       gap: 0.25rem;
+      width: 100%;
+      box-sizing: border-box;
     }
     #cameraSelect {
-      width: 100%;
-      padding: 0.4rem;
-      border-radius: 0.35rem;
+      width: 100% !important;
+      max-width: 100% !important;
+      padding: 0.5rem;
+      border-radius: 0.4rem;
       background: <?= $app_theme === 'dark' ? '#091120' : '#ffffff' ?>;
       color: var(--text);
       border: 1px solid var(--card-bd);
+      box-sizing: border-box !important;
     }
     #qr-reader-wrap {
-      width: 100%;
+      width: 100% !important;
+      max-width: 100% !important;
       aspect-ratio: 4/3;
       border-radius: 0.5rem;
-      overflow: hidden;
+      overflow: hidden !important;
       background: #000;
       position: relative;
       border: 1px solid var(--card-bd);
+      box-sizing: border-box !important;
     }
     #qr-reader {
       width: 100% !important;
+      max-width: 100% !important;
       height: 100% !important;
       border: none !important;
+      overflow: hidden !important;
+      box-sizing: border-box !important;
+    }
+    #qr-reader video, 
+    #qr-reader canvas {
+      width: 100% !important;
+      max-width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+      box-sizing: border-box !important;
     }
     #qr-reader img { display: none !important; }
     #qr-reader__dashboard { display: none !important; }
-    #qr-reader__scan_region { border: none !important; }
+    #qr-reader__scan_region { 
+      width: 100% !important; 
+      height: 100% !important; 
+      border: none !important; 
+    }
+    #qr-reader__scan_region video {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+    }
     
     .modal-settings {
       display: flex;
