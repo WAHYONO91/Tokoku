@@ -43,6 +43,8 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
   <script src="/tokoapp/assets/vendor/html5-qrcode.min.js"></script>
 
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap');
+
     :root{
       color-scheme: <?= $app_theme === 'light' ? 'light' : 'dark' ?>;
       --topbar-h: 48px;
@@ -53,17 +55,17 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
       --page-bg: #0b1220;
       --text: #e2e8f0;
       --muted: #9bb0c9;
-      --accent: #7dd3fc;
+      --accent: #38bdf8;
       --warn: #facc15;
       --danger: #fb7185;
       <?php else: ?>
       --card-bg: #ffffff;
       --card-bd: #cbd5e1;
       --page-bg: #f8fafc;
-      --text: #000000;
+      --text: #0f172a;
       --muted: #475569;
       --accent: #0284c7;
-      --warn: #eab308;
+      --warn: #d97706;
       --danger: #e11d48;
       <?php endif; ?>
     }
@@ -73,7 +75,7 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
       margin:0;
       background:var(--page-bg);
       color:var(--text);
-      font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;
+      font-family:'Outfit', system-ui, -apple-system, sans-serif;
       line-height:1.35;
     }
 
