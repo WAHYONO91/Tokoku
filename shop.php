@@ -401,109 +401,140 @@ body {
     background: var(--brand-color-hover) !important;
 }
 
-/* Premium Product Grid & Card */
+/* Premium E-Commerce Product Grid (Tokopedia/Shopee Style - Compact Images) */
 .product-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1rem;
 }
 .product-card {
-    background: var(--card-bg);
-    border: 1px solid var(--card-bd);
-    border-radius: 16px;
+    background: var(--card-bg, #ffffff);
+    border: 1px solid var(--card-bd, #e2e8f0);
+    border-radius: 12px;
     display: flex;
     flex-direction: column;
-    transition: var(--transition-smooth);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
     position: relative;
-    box-shadow: var(--card-shadow);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
     text-decoration: none !important;
 }
 .product-card:hover {
-    transform: translateY(-6px);
-    box-shadow: var(--card-shadow-hover);
-    border-color: var(--brand-color);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px -8px rgba(249, 115, 22, 0.18);
+    border-color: var(--brand-color, #f97316);
 }
 .product-image-wrapper {
     width: 100%;
     aspect-ratio: 1 / 1;
-    background: var(--input-bg);
+    background: var(--input-bg, #f8fafc);
     overflow: hidden;
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--text-muted);
+    padding: 0.35rem;
 }
 .product-image {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: var(--transition-smooth);
+    border-radius: 8px;
+    transition: transform 0.3s ease;
 }
 .product-card:hover .product-image {
-    transform: scale(1.06);
+    transform: scale(1.05);
 }
 .product-info {
-    padding: 1rem;
+    padding: 0.65rem 0.75rem 0.75rem;
     display: flex;
     flex-direction: column;
     flex: 1;
 }
 .product-name {
-    font-size: 0.95rem;
+    font-size: 0.82rem;
     font-weight: 600;
-    line-height: 1.4;
+    line-height: 1.35;
     color: var(--text-main);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.35rem;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    height: 2.8rem;
+    height: 2.25rem;
     flex: none;
 }
 .product-price {
-    color: var(--brand-color);
-    font-size: 1.25rem;
-    font-weight: 700;
-    margin-bottom: 0.4rem;
+    color: var(--brand-color, #f97316);
+    font-size: 1.05rem;
+    font-weight: 800;
+    margin-bottom: 0.35rem;
+    letter-spacing: -0.01em;
 }
 .product-meta {
-    font-size: 0.78rem;
+    font-size: 0.72rem;
     color: var(--text-muted);
     display: flex;
+    align-items: center;
     justify-content: space-between;
-    margin-bottom: 0.9rem;
+    margin-bottom: 0.6rem;
     font-weight: 500;
 }
+.stock-badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 0.15rem 0.45rem;
+    border-radius: 99px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+}
+.stock-badge.ready {
+    background: rgba(16, 185, 129, 0.12);
+    color: #10b981;
+}
+.stock-badge.low {
+    background: rgba(245, 158, 11, 0.12);
+    color: #f59e0b;
+}
+.stock-badge.empty {
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+}
+
 .add-tocart-btn {
     width: 100%;
-    padding: 0.55rem !important;
-    font-size: 0.85rem !important;
-    background: var(--brand-color) !important;
+    padding: 0.45rem 0.5rem !important;
+    font-size: 0.78rem !important;
+    background: var(--brand-color, #f97316) !important;
     color: white !important;
     border: none !important;
-    border-radius: 10px !important;
+    border-radius: 8px !important;
     cursor: pointer;
     font-weight: 700 !important;
     transition: var(--transition-smooth);
     margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
 }
-.add-tocart-btn:hover { background: var(--brand-color-hover) !important; }
-.add-tocart-btn:disabled { background: var(--text-muted) !important; cursor: not-allowed; }
+.add-tocart-btn:hover { background: var(--brand-color-hover, #ea580c) !important; }
+.add-tocart-btn:disabled { background: var(--text-muted) !important; cursor: not-allowed; opacity: 0.7; }
 
 .badge-overlay {
     position: absolute;
-    top: 0;
-    left: 0;
-    background: var(--brand-color);
+    top: 6px;
+    left: 6px;
+    background: rgba(249, 115, 22, 0.9);
+    backdrop-filter: blur(4px);
     color: white;
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     font-weight: 700;
-    padding: 0.25rem 0.6rem;
-    border-bottom-right-radius: 8px;
+    padding: 0.15rem 0.5rem;
+    border-radius: 6px;
     z-index: 10;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 /* Premium Marketing Popup Modal */
@@ -916,7 +947,10 @@ body {
                             <?php if (!empty($item['gambar']) && file_exists(__DIR__ . '/uploads/items/' . $item['gambar'])): ?>
                                 <img src="uploads/items/<?= htmlspecialchars($item['gambar']) ?>" alt="<?= htmlspecialchars($item['nama']) ?>" class="product-image" loading="lazy">
                             <?php else: ?>
-                                <span style="font-weight:600; font-size:0.85rem; color: var(--text-muted);">No Image</span>
+                                <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0.2rem; color:var(--text-muted);">
+                                    <span style="font-size:1.6rem;">📦</span>
+                                    <span style="font-weight:600; font-size:0.7rem;">No Image</span>
+                                </div>
                             <?php endif; ?>
                         </div>
 
@@ -928,7 +962,14 @@ body {
                             <div class="product-price"><?= rupiah($item['harga_jual1']) ?></div>
                             
                             <div class="product-meta">
-                                <span>Stok: <?= $stok ?> <?= htmlspecialchars($item['unit_code'] ?: 'Pcs') ?></span>
+                                <?php if ($stok > 5): ?>
+                                    <span class="stock-badge ready">Stok <?= $stok ?> <?= htmlspecialchars($item['unit_code'] ?: 'Pcs') ?></span>
+                                <?php elseif ($stok > 0): ?>
+                                    <span class="stock-badge low">Sisa <?= $stok ?> <?= htmlspecialchars($item['unit_code'] ?: 'Pcs') ?></span>
+                                <?php else: ?>
+                                    <span class="stock-badge empty">Habis</span>
+                                <?php endif; ?>
+                                <span style="font-size:0.68rem; color:var(--text-muted);">Toko</span>
                             </div>
 
                             <?php if ($stok > 0): ?>
@@ -936,10 +977,10 @@ body {
                                     <input type="hidden" name="action" value="add_to_cart">
                                     <input type="hidden" name="item_kode" value="<?= htmlspecialchars($item['kode']) ?>">
                                     <input type="hidden" name="qty" value="1">
-                                    <button type="submit" class="add-tocart-btn">Tambah ke Keranjang</button>
+                                    <button type="submit" class="add-tocart-btn">🛒 + Beli</button>
                                 </form>
                             <?php else: ?>
-                                <button disabled class="add-tocart-btn">Stok Habis</button>
+                                <button disabled class="add-tocart-btn">Habis</button>
                             <?php endif; ?>
                         </div>
                     </div>
