@@ -724,12 +724,12 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
     }
 
     /* Card view for mobile table */
-    @media (max-width: 640px) {
+    @media (max-width: 768px) {
       .grand {
         flex-direction: row !important;
         align-items: center !important;
         justify-content: space-between !important;
-        padding: 0.6rem 0.8rem !important;
+        padding: 0.65rem 0.85rem !important;
         gap: 0.5rem !important;
       }
       .grand .lbl {
@@ -741,12 +741,12 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
       }
       .grand-meta {
         flex-direction: column !important;
-        gap: 0.25rem !important;
+        gap: 0.2rem !important;
         align-items: flex-end !important;
       }
       .meta-box {
-        min-width: 100px !important;
-        padding: 0.2rem 0.4rem !important;
+        min-width: 90px !important;
+        padding: 0.15rem 0.35rem !important;
         border-radius: 0.4rem !important;
         text-align: right !important;
         border: none !important;
@@ -768,11 +768,11 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
         margin-top: 0.5rem !important;
       }
       .quick-cash-row button {
-        padding: 0.45rem 0.2rem !important;
-        font-size: 0.78rem !important;
+        padding: 0.5rem 0.2rem !important;
+        font-size: 0.8rem !important;
         font-weight: bold !important;
         text-align: center !important;
-        border-radius: 0.35rem !important;
+        border-radius: 0.4rem !important;
         cursor: pointer;
         width: 100% !important;
       }
@@ -788,13 +788,13 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
         position: relative;
         background: var(--card-bg);
         border: 1px solid var(--card-bd);
-        border-radius: 0.75rem;
+        border-radius: 0.85rem;
         margin-bottom: 0.75rem;
         padding: 0.85rem;
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         transition: transform 0.2s ease, box-shadow 0.2s ease;
       }
       #cartTable td {
@@ -1887,6 +1887,16 @@ payModeEl.addEventListener('change', () => {
     if (totalItemsMiniEl) totalItemsMiniEl.textContent = formatID(totalItems);
 
     totalBayarEl.textContent = formatID(grand);
+
+    // Update Mobile Tab badges dynamically
+    const tabCartBtn = document.getElementById('tabBtnCart');
+    const tabCheckoutBtn = document.getElementById('tabBtnCheckout');
+    if (tabCartBtn) {
+      tabCartBtn.innerHTML = '🛒 Keranjang' + (totalItems > 0 ? ` (${formatID(totalItems)})` : '');
+    }
+    if (tabCheckoutBtn) {
+      tabCheckoutBtn.innerHTML = '💳 Bayar' + (grand > 0 ? ` (Rp ${formatID(grand)})` : '');
+    }
 
     hitungKembalian();
 
