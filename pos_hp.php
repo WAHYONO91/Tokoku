@@ -295,10 +295,20 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
     .panel-bottom{ padding: 0.85rem; }
     .panel-bottom .kps{
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      grid-template-columns: 1fr;
       gap: 0.65rem;
       width: 100%;
       box-sizing: border-box;
+    }
+    @media (min-width: 576px) {
+      .panel-bottom .kps {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+    @media (min-width: 992px) and (max-width: 1280px) {
+      .panel-bottom .kps {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
     }
     .panel-bottom label {
       display: flex;
@@ -312,7 +322,6 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
       box-sizing: border-box;
     }
     @media (max-width:640px){
-      .panel-bottom .kps{ grid-template-columns: 1fr; }
       .grand{ flex-direction:column; align-items:flex-start; }
       .grand-meta{ width:100%; }
       .meta-box{ flex:1; }
