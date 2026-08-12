@@ -126,6 +126,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="card">
   <h2>Pengaturan Layout Cetak Struk/Faktur</h2>
 
+  <div style="background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af; padding:10px 12px; border-radius:6px; margin-bottom:14px; font-size:13px; line-height:1.4;">
+    <strong>ℹ️ Fitur Preview Nota Aktif:</strong><br>
+    Saat transaksi/cetak nota dibuka, nota dapat dipreview terlebih dahulu di layar. Anda dapat memilih untuk langsung <strong>🖨️ Cetak Nota</strong>, <strong>🖼️ Simpan Gambar JPG</strong>, atau <strong>📄 Simpan PDF</strong> secara offline.
+  </div>
+
   <?php if (!empty($_GET['saved'])): ?>
     <div class="alert">Pengaturan berhasil disimpan.</div>
   <?php endif; ?>

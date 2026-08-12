@@ -22,12 +22,16 @@ $items_db = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 foreach ($items_db as $item) {
     $kode = $item['kode'];
-    $qty = $cart[$kode];
-    $subtotal = $qty * $item['harga_jual1'];
+    $qty  = $cart[$kode];
+    // Apply custom promo price if set in session
+    $custom_prices = $_SESSION['cart_custom_prices'] ?? [];
+    $harga = isset($custom_prices[$kode]) ? (int)$custom_prices[$kode] : $item['harga_jual1'];
+    $subtotal = $qty * $harga;
     $total += $subtotal;
-    
-    $item['qty'] = $qty;
-    $item['subtotal'] = $subtotal;
+
+    $item['harga_jual1'] = $harga;
+    $item['qty']         = $qty;
+    $item['subtotal']    = $subtotal;
     $cart_items[] = $item;
 }
 
@@ -49,6 +53,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $guest_address = trim($_POST['guest_address'] ?? '');
         $payment_method = trim($_POST['payment_method'] ?? '');
         $note = trim($_POST['note'] ?? '');
+        
+        // Embed promo claim tag into order note
+        $claimed_promo = $_SESSION['claimed_promo'] ?? '';
+        if (!empty($claimed_promo)) {
+            $promoTag = '*** BELANJA PROMO: ' . $claimed_promo . ' ***';
+            $note = $note !== '' ? $promoTag . "\n" . $note : $promoTag;
+        }
 
         if ($guest_name === '' || $guest_phone === '' || $guest_address === '') {
             $err = 'Mohon lengkapi data pengiriman Anda.';
@@ -95,10 +106,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
                 $pdo->commit();
-                
-                // Clear cart
+
+                // Clear cart and promo session data
                 unset($_SESSION['cart']);
-                
+                unset($_SESSION['cart_custom_prices']);
+                unset($_SESSION['claimed_promo']);
+
                 header("Location: order_success.php?id=$order_id");
                 exit;
                 
@@ -129,12 +142,27 @@ if (isset($_SESSION['member']) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 ?>
 
+<?php
+// Read claimed promo for display
+$claimed_promo_display = $_SESSION['claimed_promo'] ?? '';
+?>
+
 <article>
     <h2>🚀 Checkout</h2>
     <p>Silakan lengkapi data pengiriman Anda untuk menyelesaikan pesanan.</p>
 
     <?php if ($err): ?>
         <mark style="display:block;margin-bottom:1rem;background:#dc2626;color:#fff;">⚠️ <?= htmlspecialchars($err) ?></mark>
+    <?php endif; ?>
+
+    <?php if (!empty($claimed_promo_display)): ?>
+    <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border-radius: 14px; padding: 1rem 1.5rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 6px 20px rgba(245,158,11,0.3);">
+        <span style="font-size:2rem; flex-shrink:0;">🎟️</span>
+        <div style="color:#fff;">
+            <div style="font-weight:800; font-size:0.95rem;">Kupon Promo Aktif!</div>
+            <div style="font-size:0.85rem; opacity:0.9;"><?= htmlspecialchars($claimed_promo_display) ?> &mdash; Kasir akan memberikan potongan harga secara otomatis saat memproses pesanan Anda.</div>
+        </div>
+    </div>
     <?php endif; ?>
 
     <style>

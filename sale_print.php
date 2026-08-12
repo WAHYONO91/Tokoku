@@ -201,76 +201,140 @@ $cssLineHeight   = number_format($paperLineHeight, 2, '.', '');
 <html lang="id">
 <head>
   <meta charset="utf-8">
-  <title>Cetak Penjualan</title>
+  <title>Preview Nota - <?= htmlspecialchars($sale['invoice_no'] ?? ('#'.$sale['id'])) ?></title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="/tokoapp/assets/vendor/nota_exporter.js"></script>
   <style>
     @media print {
       @page {
         size: <?= $cssPaperWidth ?>mm <?= $cssPaperHeight ?>;
         margin: <?= $cssPaperMargin ?>;
       }
-      body { margin:0; padding:0; background:#fff; }
+      body { margin:0; padding:0; background:#fff !important; }
+      .no-print, .no-print-toolbar { display:none !important; }
+      .struk-wrapper { padding:0 !important; background:none !important; box-shadow:none !important; }
+      .struk { box-shadow:none !important; border:none !important; padding-left:<?= $cssTextMargin ?> !important; padding-right:<?= $cssTextMargin ?> !important; border-radius:0 !important; }
     }
-    body { background:#fff; color:#000; margin:0; padding:0; }
-    .struk{
-      width:100%;
-      max-width:<?= $cssPaperWidth ?>mm;
-      margin:0 auto;
-      font-family:monospace;
-      font-size:<?= (int)$paperFontSize ?>px;
-      line-height:<?= $cssLineHeight ?>;
-      word-wrap:break-word;
-      overflow-wrap:break-word;
-      padding-left: <?= $cssTextMargin ?>;
-      padding-right: <?= $cssTextMargin ?>;
+    body {
+      background: #1e293b;
+      color: #000;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
     }
-    .struk table{ width:100%; border-collapse:collapse; }
-    .struk td{ padding:2px 0; vertical-align:top; }
-    .right{ text-align:right; }
-    hr{ border:0; border-top:1px dashed #000; margin:4px 0; }
-    .struk, .struk *{ page-break-inside: avoid; }
-    @media print{ .no-print{display:none;} }
+    .no-print-toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid #334155;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .toolbar-title {
+      color: #f8fafc;
+      font-size: 15px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .toolbar-buttons {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .btn-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      font-family: inherit;
+    }
+    .btn-print { background: #2563eb; color: #fff; }
+    .btn-print:hover { background: #1d4ed8; }
+    .btn-jpg { background: #059669; color: #fff; }
+    .btn-jpg:hover { background: #047857; }
+    .btn-pdf { background: #d97706; color: #fff; }
+    .btn-pdf:hover { background: #b45309; }
+    .btn-back { background: #475569; color: #fff; }
+    .btn-back:hover { background: #334155; }
+    .struk-wrapper {
+      padding: 24px 12px 40px;
+      display: flex;
+      justify-content: center;
+    }
+    .struk {
+      width: 100%;
+      max-width: <?= $cssPaperWidth ?>mm;
+      background: #ffffff;
+      color: #000000;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: <?= (int)$paperFontSize ?>px;
+      line-height: <?= $cssLineHeight ?>;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      padding: 14px <?= $cssTextMargin ?>;
+      box-sizing: border-box;
+    }
+    .struk table { width:100%; border-collapse:collapse; }
+    .struk td { padding:2px 0; vertical-align:top; }
+    .right { text-align:right; }
+    hr { border:0; border-top:1px dashed #000; margin:4px 0; }
+    .struk, .struk * { page-break-inside: avoid; }
   </style>
 
+  <?php if (!empty($_GET['autoprint'])): ?>
   <script>
-  // Cetak sekali, lalu setelah selesai: kirim sinyal ke opener + tutup window
-  (function () {
-    let done = false;
-
-    function sendDone() {
-      if (done) return;
-      done = true;
-
-      try {
-        if (window.opener) {
-          window.opener.postMessage({ type: 'PRINT_DONE' }, '*');
-        }
-      } catch (e) {}
-
-      setTimeout(function () {
-        try { window.close(); } catch (e) {}
-      }, 200);
-    }
-
-    window.addEventListener('load', function () {
-      setTimeout(function () {
-        try { window.focus(); } catch (e) {}
-        try { window.print(); } catch (e) {}
-      }, 50);
-
-      // Fallback: kalau afterprint tidak kejadian (cancel/bug), tetap kirim done
-      setTimeout(sendDone, 30000);
+    window.addEventListener('load', function() {
+      setTimeout(function() { try { window.print(); } catch(e){} }, 300);
     });
-
-    window.addEventListener('afterprint', function () {
-      sendDone();
-    });
-  })();
-</script>
-
+  </script>
+  <?php endif; ?>
 </head>
 
 <body>
-<div class="struk">
+
+<div class="no-print-toolbar">
+  <div class="toolbar-title">
+    📄 Preview Nota Penjualan
+    <span style="font-size:12px; opacity:0.75; font-weight:normal;">(<?= htmlspecialchars($sale['invoice_no'] ?? ('#'.$sale['id'])) ?>)</span>
+  </div>
+  <div class="toolbar-buttons">
+    <button type="button" class="btn-action btn-print" onclick="window.print()">
+      🖨️ Cetak Nota
+    </button>
+    <button type="button" class="btn-action btn-jpg" onclick="NotaExporter.downloadJPG(document.getElementById('strukContent'), 'Nota_<?= htmlspecialchars($sale['invoice_no'] ?? $sale['id']) ?>.jpg')">
+      🖼️ Simpan JPG
+    </button>
+    <button type="button" class="btn-action btn-pdf" onclick="NotaExporter.downloadPDF(document.getElementById('strukContent'), 'Nota_<?= htmlspecialchars($sale['invoice_no'] ?? $sale['id']) ?>.pdf')">
+      📄 Simpan PDF
+    </button>
+    <a href="/tokoapp/pos_display.php" class="btn-action btn-back">
+      ⬅️ POS Kasir
+    </a>
+  </div>
+</div>
+
+<div class="struk-wrapper">
+<div class="struk" id="strukContent">
 
   <?php if ($printShowLogo && $logoUrl && $logoAlign !== 'none'): ?>
     <div style="text-align:<?= htmlspecialchars($logoAlign) ?>;margin-bottom:2px;">
@@ -399,6 +463,7 @@ $cssLineHeight   = number_format($paperLineHeight, 2, '.', '');
     <a href="/tokoapp/pos_display.php">Transaksi lagi</a>
   </div>
 
+</div>
 </div>
 </body>
 </html>

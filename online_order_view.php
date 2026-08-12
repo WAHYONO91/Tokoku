@@ -14,18 +14,40 @@ if ($id <= 0) {
 $msg = '';
 $err = '';
 
+// Auto-migrate: add discount column to online_orders if missing
+try {
+    $pdo->exec("ALTER TABLE online_orders ADD COLUMN IF NOT EXISTS discount BIGINT NOT NULL DEFAULT 0");
+} catch (PDOException $e) { /* already exists */ }
+
 // Handle Updates
 function recalcOnlineOrder($pdo, $order_id) {
+    // Sum item totals
     $st = $pdo->prepare("SELECT COALESCE(SUM(total),0) FROM online_order_items WHERE order_id = ?");
     $st->execute([$order_id]);
-    $sum = (int)$st->fetchColumn();
-    $pdo->prepare("UPDATE online_orders SET subtotal=?, total=? WHERE id=?")->execute([$sum, $sum, $order_id]);
+    $subtotal = (int)$st->fetchColumn();
+    // Get current discount
+    $discStmt = $pdo->prepare("SELECT COALESCE(discount,0) FROM online_orders WHERE id = ?");
+    $discStmt->execute([$order_id]);
+    $discount = (int)$discStmt->fetchColumn();
+    $total = max(0, $subtotal - $discount);
+    $pdo->prepare("UPDATE online_orders SET subtotal=?, total=? WHERE id=?")->execute([$subtotal, $total, $order_id]);
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? 'update_status';
 
-    if ($action === 'update_status') {
+    // === Save Discount ===
+    if ($action === 'save_discount') {
+        $discount_amount = max(0, (int)($_POST['discount_amount'] ?? 0));
+        try {
+            $pdo->prepare("UPDATE online_orders SET discount=? WHERE id=?")->execute([$discount_amount, $id]);
+            recalcOnlineOrder($pdo, $id);
+            log_activity($pdo, 'SET_ORDER_DISCOUNT', "Set diskon Rp" . number_format($discount_amount) . " untuk pesanan #$id");
+            $msg = 'Potongan diskon berhasil disimpan! Total pesanan otomatis diperbarui.';
+        } catch (Exception $e) {
+            $err = 'Gagal simpan diskon: ' . $e->getMessage();
+        }
+    } elseif ($action === 'update_status') {
         $new_status = $_POST['status'] ?? '';
         $new_payment = $_POST['payment_status'] ?? '';
 
@@ -59,15 +81,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     $shift = '1'; 
                     $subtotal = (int)$syncOrder['subtotal'];
-                    $total = (int)$syncOrder['total'];
-                    $discount = 0;
+                    $discount = (int)($syncOrder['discount'] ?? 0);
+                    $total    = (int)$syncOrder['total']; // Already discounted
                     $tax = 0;
-                    $tunai = $total; // Online order is assumed to be fully paid via the method chosen
+                    $tunai = $total;
                     $kembalian = 0;
                     $created_by = "Online: " . ($syncOrder['guest_name'] ?: 'Guest');
                     $member_kode = $syncOrder['member_kode'];
 
-                    // 1. Insert into Sales
+                    // 1. Insert into Sales (with real discount value)
                     $insSale = $pdo->prepare("
                         INSERT INTO sales
                             (invoice_no, member_kode, shift, subtotal, discount, tax,
@@ -154,9 +176,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
                     }
 
-                    $msg = 'Status pesanan berhasil diperbarui dan disinkronisasi ke daftar Penjualan (POS)! Poin member ditambahkan.';
+            $msg = 'Status pesanan berhasil diperbarui dan disinkronisasi ke daftar Penjualan (POS)! Poin member ditambahkan.';
                 } else {
-                    $msg = 'Status pesanan berhasil diperbarui!';
+                    $msg = 'Status pesanan berhasil diperbarui! (Sudah pernah disinkronisasi sebelumnya)';
                 }
             } else {
                 $msg = 'Status pesanan berhasil diperbarui!';
@@ -253,6 +275,30 @@ $items = $stmtItems->fetchAll(PDO::FETCH_ASSOC);
         <mark style="display:block;margin-bottom:1rem;background:#dc2626;color:#fff;">⚠️ <?= htmlspecialchars($err) ?></mark>
     <?php endif; ?>
 
+    <?php
+    // Detect promo tag in order note
+    $isPromoOrder = false;
+    $promoOrderName = '';
+    $cleanNote = $order['note'] ?? '';
+    if (!empty($order['note']) && strpos($order['note'], '*** BELANJA PROMO:') !== false) {
+        $isPromoOrder = true;
+        preg_match('/\*\*\* BELANJA PROMO: (.+?) \*\*\*/', $order['note'], $pm);
+        $promoOrderName = $pm[1] ?? 'Promo';
+        // Strip system tag from displayed note so it shows clean
+        $cleanNote = trim(preg_replace('/\*\*\* BELANJA PROMO: .+? \*\*\*\n?/', '', $order['note']));
+    }
+    ?>
+
+    <?php if ($isPromoOrder): ?>
+    <div style="background: linear-gradient(135deg, #f59e0b, #d97706); border-radius:14px; padding:1rem 1.5rem; margin-bottom:1.5rem; display:flex; align-items:center; gap:1rem; box-shadow: 0 6px 24px rgba(245,158,11,0.35);">
+        <span style="font-size:2.5rem; flex-shrink:0;">🎁</span>
+        <div style="color:#fff;">
+            <div style="font-weight:800; font-size:1.05rem; text-shadow:0 1px 2px rgba(0,0,0,0.2);">PESANAN BELANJA PROMO!</div>
+            <div style="font-size:0.88rem; opacity:0.95; margin-top:0.1rem;">Kupon: <strong><?= htmlspecialchars($promoOrderName) ?></strong> &mdash; Berikan potongan harga kepada pelanggan menggunakan form diskon di kolom kanan.</div>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <div class="grid">
         <!-- DETAIL PELANGGAN -->
         <div>
@@ -263,7 +309,7 @@ $items = $stmtItems->fetchAll(PDO::FETCH_ASSOC);
                     <tr style="background:transparent;"><td style="width:30%; padding:0.3rem 0; border:none;" class="muted">Nama</td><td style="padding:0.3rem 0; border:none;"><strong><?= htmlspecialchars($order['guest_name']) ?></strong></td></tr>
                     <tr style="background:transparent;"><td style="padding:0.3rem 0; border:none;" class="muted">Telepon</td><td style="padding:0.3rem 0; border:none;"><?= htmlspecialchars($order['guest_phone']) ?></td></tr>
                     <tr style="background:transparent;"><td style="padding:0.3rem 0; border:none;" class="muted">Alamat</td><td style="padding:0.3rem 0; border:none;"><?= nl2br(htmlspecialchars($order['guest_address'])) ?></td></tr>
-                    <tr style="background:transparent;"><td style="padding:0.3rem 0; border:none;" class="muted">Catatan</td><td style="padding:0.3rem 0; border:none;"><?= htmlspecialchars($order['note'] ?: '-') ?></td></tr>
+                    <tr style="background:transparent;"><td style="width:30%; padding:0.3rem 0; border:none;" class="muted">Catatan</td><td style="padding:0.3rem 0; border:none;"><?= htmlspecialchars($cleanNote ?: '-') ?></td></tr>
                     <tr style="background:transparent;"><td style="padding:0.3rem 0; border:none;" class="muted">Via</td><td style="padding:0.3rem 0; border:none;"><strong><?= htmlspecialchars($order['payment_method']) ?></strong></td></tr>
                     
                     <?php if (!empty($order['lat_lng'])): ?>
@@ -385,6 +431,34 @@ $items = $stmtItems->fetchAll(PDO::FETCH_ASSOC);
 
         <!-- UPDATE STATUS FORM -->
         <div>
+            <form method="post" style="background:var(--card-bg, #111827); border:1px solid var(--card-bd, #1f2937); border-radius:8px; padding:1.2rem; margin-bottom:1rem;">
+                <h5 style="margin-top:0;">💰 Potongan / Diskon Pesanan</h5>
+                <hr style="border-color:var(--card-bd); margin-bottom:0.75rem;">
+                <input type="hidden" name="action" value="save_discount">
+                <input type="hidden" name="id" value="<?= $order['id'] ?>">
+
+                <?php
+                $currentDiscount = (int)($order['discount'] ?? 0);
+                $currentSubtotal = (int)($order['subtotal'] ?? 0);
+                ?>
+                <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem; font-size:0.85rem; color:var(--text-muted);">
+                    <span>Subtotal Barang</span>
+                    <span><?= rupiah($currentSubtotal) ?></span>
+                </div>
+                <?php if ($currentDiscount > 0): ?>
+                <div style="display:flex; justify-content:space-between; margin-bottom:0.75rem; font-size:0.85rem; color:#10b981; font-weight:600;">
+                    <span>Potongan Diskon</span>
+                    <span>- <?= rupiah($currentDiscount) ?></span>
+                </div>
+                <?php endif; ?>
+
+                <label style="font-size:0.85rem; font-weight:600;">Nominal Potongan/Diskon (Rp)
+                    <input type="number" name="discount_amount" value="<?= $currentDiscount ?>" min="0" max="<?= $currentSubtotal ?>" step="500" placeholder="Contoh: 10000" style="margin-top:0.3rem;">
+                </label>
+                <small style="color:var(--text-muted); display:block; margin-bottom:1rem; font-size:0.78rem;">Isi nominal potongan harga promo. Kosongkan (isi 0) jika tidak ada diskon.</small>
+                <button type="submit" class="secondary" style="width:100%; font-weight:700; border-radius:8px;">💾 Simpan Potongan Harga</button>
+            </form>
+
             <form method="post" style="background:var(--card-bg, #111827); border:1px solid var(--card-bd, #1f2937); border-radius:8px; padding:1.2rem;">
                 <h5 style="margin-top:0;">Update Pesanan</h5>
                 <hr style="border-color:var(--card-bd); margin-bottom:0.75rem;">

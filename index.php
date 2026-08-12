@@ -134,12 +134,50 @@ $st_sales = $pdo->prepare("
 $st_sales->execute([':from' => $start7, ':to' => $end7]);
 $sales_raw = $st_sales->fetchAll(PDO::FETCH_KEY_PAIR); // [ 'YYYY-mm-dd' => total ]
 
-for ($i=6; $i>=0; $i--) {
-  $d = date('Y-m-d', strtotime("-{$i} day"));
-  $label = date('d/m', strtotime($d));
-  $sales_labels[] = $label;
-  $sales_values[] = isset($sales_raw[$d]) ? (int)$sales_raw[$d] : 0;
+/* ======================
+   Kalkulasi Laba Rugi 4 Periode (HANYA UNTUK ADMIN)
+   ====================== */
+$is_admin = (($_SESSION['user']['role'] ?? '') === 'admin');
+
+$profit_today  = ['total_sales'=>0, 'total_subtotal'=>0, 'total_discount'=>0, 'total_tax'=>0, 'trx_count'=>0, 'total_hpp'=>0, 'laba'=>0, 'margin_pct'=>0];
+$profit_week   = $profit_today;
+$profit_month  = $profit_today;
+$profit_year   = $profit_today;
+$profit_values = [];
+$hpp_values    = [];
+
+if ($is_admin) {
+  $this_week = date('Y-m-d', strtotime('monday this week'));
+  $this_year = date('Y-01-01');
+
+  $profit_today = get_profit_summary($pdo, $today, $today);
+  $profit_week  = get_profit_summary($pdo, $this_week, $today);
+  $profit_month = get_profit_summary($pdo, $this_month, $today);
+  $profit_year  = get_profit_summary($pdo, $this_year, $today);
+
+  /* HPP & Profit per hari 7 hari terakhir */
+  $st_hpp_7 = $pdo->prepare("
+    SELECT DATE(s.created_at) AS d, COALESCE(SUM(si.qty * COALESCE(i.harga_beli, 0)), 0) AS hpp
+    FROM sale_items si
+    JOIN sales s ON s.id = si.sale_id
+    LEFT JOIN items i ON i.kode = si.item_kode
+    WHERE (s.status IS NULL OR s.status='OK')
+      AND DATE(s.created_at) BETWEEN :from AND :to
+    GROUP BY DATE(s.created_at)
+  ");
+  $st_hpp_7->execute([':from' => $start7, ':to' => $end7]);
+  $hpp_raw_7 = $st_hpp_7->fetchAll(PDO::FETCH_KEY_PAIR);
+
+  for ($i=6; $i>=0; $i--) {
+    $d = date('Y-m-d', strtotime("-{$i} day"));
+    $s_val = isset($sales_raw[$d]) ? (int)$sales_raw[$d] : 0;
+    $h_val = isset($hpp_raw_7[$d]) ? (int)$hpp_raw_7[$d] : 0;
+    $hpp_values[]    = $h_val;
+    $profit_values[] = $s_val - $h_val;
+  }
 }
+
+
 
 /* Grafik pembelian 7 hari (kalau ada purchases) */
 $purchase_labels = [];
@@ -353,6 +391,126 @@ if (table_exists($pdo,'items')) {
       <p style="margin-bottom:0;">Bulan ini: <?= 'Rp '.number_format($pb_month,0,',','.') ?></p>
     </article>
   </div>
+
+  <?php if ($is_admin): ?>
+  <!-- RINGKASAN & LAPORAN LABA RUGI (HARIAN, MINGGUAN, BULANAN, TAHUNAN - HANYA ADMIN) -->
+  <article style="margin:0 0 1.2rem 0; border:1px solid var(--bd, #1f2a3a); border-radius:.75rem;">
+    <header style="display:flex; justify-content:space-between; align-items:center; gap:.75rem; flex-wrap:wrap;">
+      <div style="font-weight:700; font-size:1.05rem;">💰 Ringkasan Laporan Laba Rugi (Admin)</div>
+      <div class="muted" style="font-size:.85rem;">Analisis Keuntungan Harian, Mingguan, Bulanan &amp; Tahunan</div>
+    </header>
+
+    <div style="display:grid; gap:1rem; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); margin-top:.8rem;">
+      <!-- LABA HARIAN -->
+      <article style="margin:0; background: linear-gradient(135deg, rgba(16,185,129,0.08), rgba(16,185,129,0.02)); border:1px solid rgba(16,185,129,0.25);">
+        <header style="display:flex; justify-content:space-between; align-items:center; font-size:0.88rem; font-weight:600;">
+          <span>📅 Laba Hari Ini</span>
+          <span style="background:#10b981; color:#fff; font-size:0.72rem; padding:0.1rem 0.4rem; border-radius:99px;">Harian</span>
+        </header>
+        <strong style="font-size:1.4rem; color:#10b981; display:block; margin:0.3rem 0;"><?= 'Rp '.number_format($profit_today['laba'],0,',','.') ?></strong>
+        <div style="font-size:0.8rem; line-height:1.4; opacity:0.9;">
+          <div>Omzet: <strong>Rp <?= number_format($profit_today['total_sales'],0,',','.') ?></strong></div>
+          <div>Modal/HPP: <strong>Rp <?= number_format($profit_today['total_hpp'],0,',','.') ?></strong></div>
+          <div>Margin: <span style="color:#10b981; font-weight:700;"><?= $profit_today['margin_pct'] ?>%</span></div>
+        </div>
+      </article>
+
+      <!-- LABA MINGGUAN -->
+      <article style="margin:0; background: linear-gradient(135deg, rgba(14,165,233,0.08), rgba(14,165,233,0.02)); border:1px solid rgba(14,165,233,0.25);">
+        <header style="display:flex; justify-content:space-between; align-items:center; font-size:0.88rem; font-weight:600;">
+          <span>🗓️ Laba Minggu Ini</span>
+          <span style="background:#0ea5e9; color:#fff; font-size:0.72rem; padding:0.1rem 0.4rem; border-radius:99px;">Mingguan</span>
+        </header>
+        <strong style="font-size:1.4rem; color:#0ea5e9; display:block; margin:0.3rem 0;"><?= 'Rp '.number_format($profit_week['laba'],0,',','.') ?></strong>
+        <div style="font-size:0.8rem; line-height:1.4; opacity:0.9;">
+          <div>Omzet: <strong>Rp <?= number_format($profit_week['total_sales'],0,',','.') ?></strong></div>
+          <div>Modal/HPP: <strong>Rp <?= number_format($profit_week['total_hpp'],0,',','.') ?></strong></div>
+          <div>Margin: <span style="color:#0ea5e9; font-weight:700;"><?= $profit_week['margin_pct'] ?>%</span></div>
+        </div>
+      </article>
+
+      <!-- LABA BULANAN -->
+      <article style="margin:0; background: linear-gradient(135deg, rgba(139,92,246,0.08), rgba(139,92,246,0.02)); border:1px solid rgba(139,92,246,0.25);">
+        <header style="display:flex; justify-content:space-between; align-items:center; font-size:0.88rem; font-weight:600;">
+          <span>📆 Laba Bulan Ini</span>
+          <span style="background:#8b5cf6; color:#fff; font-size:0.72rem; padding:0.1rem 0.4rem; border-radius:99px;">Bulanan</span>
+        </header>
+        <strong style="font-size:1.4rem; color:#8b5cf6; display:block; margin:0.3rem 0;"><?= 'Rp '.number_format($profit_month['laba'],0,',','.') ?></strong>
+        <div style="font-size:0.8rem; line-height:1.4; opacity:0.9;">
+          <div>Omzet: <strong>Rp <?= number_format($profit_month['total_sales'],0,',','.') ?></strong></div>
+          <div>Modal/HPP: <strong>Rp <?= number_format($profit_month['total_hpp'],0,',','.') ?></strong></div>
+          <div>Margin: <span style="color:#8b5cf6; font-weight:700;"><?= $profit_month['margin_pct'] ?>%</span></div>
+        </div>
+      </article>
+
+      <!-- LABA TAHUNAN -->
+      <article style="margin:0; background: linear-gradient(135deg, rgba(245,158,11,0.08), rgba(245,158,11,0.02)); border:1px solid rgba(245,158,11,0.25);">
+        <header style="display:flex; justify-content:space-between; align-items:center; font-size:0.88rem; font-weight:600;">
+          <span>🏆 Laba Tahun Ini</span>
+          <span style="background:#f59e0b; color:#fff; font-size:0.72rem; padding:0.1rem 0.4rem; border-radius:99px;">Tahunan</span>
+        </header>
+        <strong style="font-size:1.4rem; color:#f59e0b; display:block; margin:0.3rem 0;"><?= 'Rp '.number_format($profit_year['laba'],0,',','.') ?></strong>
+        <div style="font-size:0.8rem; line-height:1.4; opacity:0.9;">
+          <div>Omzet: <strong>Rp <?= number_format($profit_year['total_sales'],0,',','.') ?></strong></div>
+          <div>Modal/HPP: <strong>Rp <?= number_format($profit_year['total_hpp'],0,',','.') ?></strong></div>
+          <div>Margin: <span style="color:#f59e0b; font-weight:700;"><?= $profit_year['margin_pct'] ?>%</span></div>
+        </div>
+      </article>
+    </div>
+
+    <!-- TABEL RINCIAN LABA RUGI -->
+    <div style="overflow:auto; margin-top:1.2rem;">
+      <table class="table-small" style="min-width:750px">
+        <thead>
+          <tr>
+            <th>Periode Laporan</th>
+            <th class="right">Omzet Penjualan</th>
+            <th class="right">Total Diskon</th>
+            <th class="right">Total HPP / Modal</th>
+            <th class="right">Laba Bersih</th>
+            <th class="right">Margin (%)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Hari Ini</strong> (<?= date('d M Y') ?>)</td>
+            <td class="right">Rp <?= number_format($profit_today['total_sales'],0,',','.') ?></td>
+            <td class="right">Rp <?= number_format($profit_today['total_discount'],0,',','.') ?></td>
+            <td class="right">Rp <?= number_format($profit_today['total_hpp'],0,',','.') ?></td>
+            <td class="right" style="color:#10b981; font-weight:700;">Rp <?= number_format($profit_today['laba'],0,',','.') ?></td>
+            <td class="right"><strong><?= $profit_today['margin_pct'] ?>%</strong></td>
+          </tr>
+          <tr>
+            <td><strong>Minggu Ini</strong> (<?= date('d M', strtotime($this_week ?? $today)) ?> &mdash; <?= date('d M Y') ?>)</td>
+            <td class="right">Rp <?= number_format($profit_week['total_sales'],0,',','.') ?></td>
+            <td class="right">Rp <?= number_format($profit_week['total_discount'],0,',','.') ?></td>
+            <td class="right">Rp <?= number_format($profit_week['total_hpp'],0,',','.') ?></td>
+            <td class="right" style="color:#0ea5e9; font-weight:700;">Rp <?= number_format($profit_week['laba'],0,',','.') ?></td>
+            <td class="right"><strong><?= $profit_week['margin_pct'] ?>%</strong></td>
+          </tr>
+          <tr>
+            <td><strong>Bulan Ini</strong> (<?= date('M Y') ?>)</td>
+            <td class="right">Rp <?= number_format($profit_month['total_sales'],0,',','.') ?></td>
+            <td class="right">Rp <?= number_format($profit_month['total_discount'],0,',','.') ?></td>
+            <td class="right">Rp <?= number_format($profit_month['total_hpp'],0,',','.') ?></td>
+            <td class="right" style="color:#8b5cf6; font-weight:700;">Rp <?= number_format($profit_month['laba'],0,',','.') ?></td>
+            <td class="right"><strong><?= $profit_month['margin_pct'] ?>%</strong></td>
+          </tr>
+          <tr>
+            <td><strong>Tahun Ini</strong> (Tahun <?= date('Y') ?>)</td>
+            <td class="right">Rp <?= number_format($profit_year['total_sales'],0,',','.') ?></td>
+            <td class="right">Rp <?= number_format($profit_year['total_discount'],0,',','.') ?></td>
+            <td class="right">Rp <?= number_format($profit_year['total_hpp'],0,',','.') ?></td>
+            <td class="right" style="color:#f59e0b; font-weight:700;">Rp <?= number_format($profit_year['laba'],0,',','.') ?></td>
+            <td class="right"><strong><?= $profit_year['margin_pct'] ?>%</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </article>
+  <?php endif; ?>
+
+
   <?php
 /* ======================
    RINGKASAN PIUTANG MEMBER (member_ar)
@@ -590,29 +748,53 @@ if (!window.Chart) {
 </script>
 
 <script>
+const isAdmin        = <?= json_encode($is_admin) ?>;
 const salesLabels    = <?= json_encode($sales_labels) ?>;
 const salesValues    = <?= json_encode($sales_values) ?>;
+const profitValues   = <?= json_encode($profit_values) ?>;
+const hppValues      = <?= json_encode($hpp_values) ?>;
 const purchaseLabels = <?= json_encode($purchase_labels) ?>;
 const purchaseValues = <?= json_encode($purchase_values) ?>;
 
 if (window.Chart) {
-  // Chart Penjualan
+  // Chart Penjualan (& Laba jika Admin)
   (() => {
     const el = document.getElementById('salesChart');
     if (!el) return;
+
+    const datasets = [
+      {
+        label: 'Penjualan (Rp)',
+        data: salesValues,
+        backgroundColor: 'rgba(14, 165, 233, 0.75)',
+        borderColor: '#0ea5e9',
+        borderWidth: 1,
+        borderRadius: 4
+      }
+    ];
+
+    if (isAdmin) {
+      datasets.push({
+        label: 'Laba Bersih (Rp)',
+        data: profitValues,
+        backgroundColor: 'rgba(16, 185, 129, 0.75)',
+        borderColor: '#10b981',
+        borderWidth: 1,
+        borderRadius: 4
+      });
+    }
 
     new Chart(el.getContext('2d'), {
       type: 'bar',
       data: {
         labels: salesLabels,
-        datasets: [{
-          label: 'Penjualan (Rp)',
-          data: salesValues,
-          borderWidth: 1
-        }]
+        datasets: datasets
       },
       options: {
-        plugins: { legend: { display: false } },
+        responsive: true,
+        plugins: { 
+          legend: { display: isAdmin, position: 'top' } 
+        },
         scales: {
           y: {
             beginAtZero: true,
@@ -624,6 +806,8 @@ if (window.Chart) {
       }
     });
   })();
+
+
 
   // Chart Pembelian
   (() => {

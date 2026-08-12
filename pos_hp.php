@@ -40,6 +40,7 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
   <title><?= htmlspecialchars($store) ?> — POS Display</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/png" href="<?= htmlspecialchars($app_logo) ?>">
+  <script src="/tokoapp/assets/vendor/html5-qrcode.min.js"></script>
 
   <style>
     :root{
@@ -426,6 +427,401 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
       body{background:#fff;color:#000}
       .no-print{display:none!important}
     }
+
+    /* =========================
+       NEW MOBILE & CAMERA SCROLL STYLES
+       ========================= */
+    .barcode-row {
+      display: flex;
+      gap: 0.5rem;
+      width: 100%;
+    }
+    .barcode-row .pos-input {
+      flex: 1;
+    }
+    .btn-scan-camera {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      padding: 0.55rem 0.9rem;
+      background: var(--accent) !important;
+      color: #000 !important;
+      border: 1px solid var(--accent) !important;
+      border-radius: 0.5rem;
+      font-weight: 700;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .btn-scan-camera:hover {
+      background: <?= $app_theme === 'dark' ? '#bae6fd' : '#0284c7' ?> !important;
+      color: #000 !important;
+    }
+    
+    .qty-stepper {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--card-bd);
+      border-radius: 0.35rem;
+      background: <?= $app_theme === 'dark' ? '#091120' : '#ffffff' ?>;
+      overflow: hidden;
+    }
+    .stepper-btn {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: <?= $app_theme === 'dark' ? '#1f2b3e' : '#e2e8f0' ?>;
+      border: none;
+      color: var(--text);
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      user-select: none;
+    }
+    .stepper-btn:hover {
+      background: <?= $app_theme === 'dark' ? '#2c3c55' : '#cbd5e1' ?>;
+    }
+    .qty-stepper .qtyInput {
+      width: 45px !important;
+      height: 32px;
+      border: none !important;
+      border-radius: 0 !important;
+      text-align: center;
+      padding: 0 !important;
+      margin: 0 !important;
+      background: transparent !important;
+      -moz-appearance: textfield;
+    }
+    .qty-stepper .qtyInput::-webkit-outer-spin-button,
+    .qty-stepper .qtyInput::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    /* Mobile Tabs Styling */
+    .mobile-tabs {
+      display: none;
+      gap: 0.4rem;
+      margin-bottom: 0.65rem;
+      background: var(--card-bg);
+      border: 1px solid var(--card-bd);
+      padding: 0.35rem;
+      border-radius: 0.5rem;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 0.55rem 0.35rem;
+      border-radius: 0.35rem;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s ease-in-out;
+    }
+    .tab-btn.active {
+      background: var(--accent) !important;
+      color: #000 !important;
+    }
+
+    /* Camera Modal Styles */
+    #cameraModal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(5px);
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    #cameraModal.show {
+      display: flex;
+    }
+    #cameraModal .modal-content {
+      background: var(--card-bg);
+      border: 1px solid var(--card-bd);
+      border-radius: 0.75rem;
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+    }
+    #cameraModal .modal-header {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--card-bd);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    #cameraModal .modal-header h3 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+    .close-modal-btn {
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-size: 1.7rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0;
+    }
+    #cameraModal .modal-body {
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    #camera-select-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    #cameraSelect {
+      width: 100%;
+      padding: 0.4rem;
+      border-radius: 0.35rem;
+      background: <?= $app_theme === 'dark' ? '#091120' : '#ffffff' ?>;
+      color: var(--text);
+      border: 1px solid var(--card-bd);
+    }
+    #qr-reader-wrap {
+      width: 100%;
+      aspect-ratio: 4/3;
+      border-radius: 0.5rem;
+      overflow: hidden;
+      background: #000;
+      position: relative;
+      border: 1px solid var(--card-bd);
+    }
+    #qr-reader {
+      width: 100% !important;
+      height: 100% !important;
+      border: none !important;
+    }
+    #qr-reader img { display: none !important; }
+    #qr-reader__dashboard { display: none !important; }
+    #qr-reader__scan_region { border: none !important; }
+    
+    .modal-settings {
+      display: flex;
+      align-items: center;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 0.25rem;
+    }
+    .toggle-container {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    /* Grid Layout for Desktop vs Mobile */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--gap);
+    }
+
+    @media (min-width: 992px) {
+      .main-grid {
+        grid-template-columns: 1.6fr 1fr;
+      }
+      .tab-section {
+        display: block !important;
+      }
+      .tab-right-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: var(--gap);
+      }
+    }
+
+    @media (max-width: 991px) {
+      .tab-section {
+        display: none;
+      }
+      .tab-section.active {
+        display: block;
+      }
+      .mobile-tabs {
+        display: flex;
+      }
+      .tab-right-wrapper {
+        display: contents;
+      }
+      .keyboard-help {
+        display: none !important;
+      }
+    }
+
+    /* Card view for mobile table */
+    @media (max-width: 640px) {
+      .grand {
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        padding: 0.6rem 0.8rem !important;
+        gap: 0.5rem !important;
+      }
+      .grand .lbl {
+        font-size: 0.72rem !important;
+        margin-bottom: 2px !important;
+      }
+      .grand .num {
+        font-size: 1.5rem !important;
+      }
+      .grand-meta {
+        flex-direction: column !important;
+        gap: 0.25rem !important;
+        align-items: flex-end !important;
+      }
+      .meta-box {
+        min-width: 100px !important;
+        padding: 0.2rem 0.4rem !important;
+        border-radius: 0.4rem !important;
+        text-align: right !important;
+        border: none !important;
+        background: transparent !important;
+      }
+      .meta-label {
+        font-size: 0.6rem !important;
+        display: inline !important;
+        margin-right: 4px !important;
+      }
+      .meta-value {
+        font-size: 0.82rem !important;
+        display: inline !important;
+      }
+      .quick-cash-row {
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 0.35rem !important;
+        margin-top: 0.5rem !important;
+      }
+      .quick-cash-row button {
+        padding: 0.45rem 0.2rem !important;
+        font-size: 0.78rem !important;
+        font-weight: bold !important;
+        text-align: center !important;
+        border-radius: 0.35rem !important;
+        cursor: pointer;
+        width: 100% !important;
+      }
+
+      #cartTable thead {
+        display: none;
+      }
+      #cartTable, #cartTable tbody, #cartTable tr {
+        display: block;
+        width: 100%;
+      }
+      #cartTable tr {
+        position: relative;
+        background: var(--card-bg);
+        border: 1px solid var(--card-bd);
+        border-radius: 0.75rem;
+        margin-bottom: 0.75rem;
+        padding: 0.85rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+      #cartTable td {
+        display: block;
+        width: 100% !important;
+        border: none;
+        padding: 0;
+        text-align: left;
+      }
+      #cartTable td.col-kode {
+        font-size: 0.72rem;
+        color: var(--muted);
+        order: 1;
+        margin-bottom: 1px;
+      }
+      #cartTable td:nth-child(2) {
+        font-weight: 700;
+        font-size: 1.0rem;
+        color: var(--text);
+        order: 2;
+        padding-right: 2.2rem;
+        margin-bottom: 0.3rem;
+      }
+      #cartTable td.col-qty {
+        order: 3;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        border-top: 1px dashed var(--card-bd);
+        border-bottom: 1px dashed var(--card-bd);
+      }
+      #cartTable td.col-qty::before {
+        content: "Jumlah (Qty):";
+        font-weight: 600;
+        font-size: 0.8rem;
+        color: var(--muted);
+      }
+      #cartTable td.col-harga {
+        order: 4;
+        padding: 0.4rem 0;
+        border-bottom: 1px dashed var(--card-bd);
+      }
+      #cartTable td.col-total {
+        order: 5;
+        display: flex;
+        justify-content: space-between;
+        font-weight: 700;
+        font-size: 0.98rem;
+        color: var(--accent);
+        padding: 0.4rem 0;
+      }
+      #cartTable td.col-total::before {
+        content: "Subtotal:";
+        font-weight: 600;
+        color: var(--muted);
+        font-size: 0.8rem;
+      }
+      #cartTable td.col-aksi {
+        position: absolute;
+        top: 0.85rem;
+        right: 0.85rem;
+        width: auto !important;
+        margin-top: 0;
+        order: 10;
+      }
+      #cartTable td.col-aksi button.delBtn {
+        background: rgba(239, 68, 68, 0.1) !important;
+        border: 1px solid rgba(239, 68, 68, 0.2) !important;
+        color: #ef4444 !important;
+        padding: 0.35rem 0.5rem !important;
+        border-radius: 0.35rem !important;
+        font-size: 0.72rem !important;
+        font-weight: 700 !important;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        transition: all 0.15s ease;
+      }
+      #cartTable td.col-aksi button.delBtn:hover {
+        background: #ef4444 !important;
+        color: #ffffff !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -454,7 +850,7 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
       <?php endif; ?>
 
       <?php if (module_active('POS_DISPLAY')): ?>
-        <a href="/tokoapp/pos_hp.php" class="shortcut-item" title="POS HP (Layar HP)">📱 <span>POS HP</span></a>
+        <a href="/tokoapp/pos_display.php" class="shortcut-item" title="POS Desktop">🖥️ <span>POS Desktop</span></a>
       <?php endif; ?>
 
       <?php if (module_active('INVENTORY')): ?>
@@ -513,210 +909,254 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
       </div>
     </div>
 
-    <div class="card">
-      <header style="margin-bottom:.45rem;font-weight:650">
-        Scan / ketik barcode / nama barang lalu tekan Enter (F2 untuk cari barang)
-      </header>
-
-      <input
-        class="pos-input"
-        id="barcode"
-        placeholder="Barcode / Kode Barang"
-        autocomplete="off"
-        inputmode="text"
-      >
-
-      <datalist id="itemlist">
-        <?php
-        try {
-            $items = $pdo->query("
-              SELECT kode, nama
-              FROM items
-              ORDER BY nama ASC
-              LIMIT 300
-            ")->fetchAll(PDO::FETCH_ASSOC);
-
-            foreach($items as $it){
-                echo '<option value="'.htmlspecialchars($it['kode']).'">'.htmlspecialchars($it['nama']).'</option>';
-            }
-        } catch (Throwable $e) {}
-        ?>
-      </datalist>
-
-      <div id="stockInfo" class="muted" style="margin-top:.3rem;font-size:.85rem;">
-        Info stok: Gudang 0 • Toko 0 • Total 0
-      </div>
-
-      <div id="nextQtyInfo" class="muted" style="margin-top:.12rem;font-size:.85rem;">
-        Qty input berikutnya: <strong id="nextQtyValue">1</strong>
-      </div>
+    <!-- Mobile Tabs Navigation -->
+    <div class="mobile-tabs no-print">
+      <button type="button" class="tab-btn active" id="tabBtnCart" onclick="switchTab('cart')">🛒 Keranjang</button>
+      <button type="button" class="tab-btn" id="tabBtnCheckout" onclick="switchTab('checkout')">💳 Bayar</button>
+      <button type="button" class="tab-btn" id="tabBtnHold" onclick="switchTab('hold')">⏸️ Tunda</button>
     </div>
 
-    <div class="layout">
+    <div class="main-grid">
+      <!-- COLUMN LEFT (Cart) -->
+      <div id="tab-cart" class="tab-section active">
+        
+        <!-- Barcode Scan & Input Card -->
+        <div class="card">
+          <header style="margin-bottom:.45rem;font-weight:650">
+            Pindai barcode atau cari barang belanjaan
+          </header>
 
-      <div class="card card-table">
-        <div class="table-topinfo">
-          <span>Baris: <strong id="totalRows">0</strong></span>
-          <span>•</span>
-          <span>Item: <strong id="totalItemsMini">0</strong></span>
+          <div class="barcode-row">
+            <input
+              class="pos-input"
+              id="barcode"
+              placeholder="Barcode / Kode Barang"
+              autocomplete="off"
+              inputmode="text"
+            >
+            <button type="button" class="btn-scan-camera" id="btnScanCamera" title="Scan Barcode">📷 Scan</button>
+            <button type="button" class="btn" id="btnItemSearchMobile" title="Cari Barang" style="background:#0284c7 !important; border-color:#0284c7 !important; color:#fff !important; padding: 0.55rem 0.9rem; font-weight:700; border-radius:0.5rem; cursor:pointer;">🔍 Cari</button>
+          </div>
+
+          <datalist id="itemlist">
+            <?php
+            try {
+                $items = $pdo->query("
+                  SELECT kode, nama
+                  FROM items
+                  ORDER BY nama ASC
+                  LIMIT 300
+                ")->fetchAll(PDO::FETCH_ASSOC);
+
+                foreach($items as $it){
+                    echo '<option value="'.htmlspecialchars($it['kode']).'">'.htmlspecialchars($it['nama']).'</option>';
+                }
+            } catch (Throwable $e) {}
+            ?>
+          </datalist>
+
+          <div id="stockInfo" class="muted" style="margin-top:.3rem;font-size:.85rem;">
+            Info stok: Gudang 0 • Toko 0 • Total 0
+          </div>
+
+          <div id="nextQtyInfo" class="muted" style="margin-top:.4rem;font-size:.85rem;display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+            <span>Qty Scan Berikutnya:</span>
+            <div class="qty-stepper" style="height: 28px;">
+              <button type="button" class="stepper-btn" onclick="adjustNextScanQty(-1)" style="width:28px;height:28px;font-size:0.9rem;padding:0;line-height:28px;">−</button>
+              <input type="number" id="nextScanQtyInput" value="1" min="1" style="width:40px !important;height:28px;font-size:0.8rem;padding:0 !important;text-align:center;" onchange="setNextScanQty(this.value)">
+              <button type="button" class="stepper-btn" onclick="adjustNextScanQty(1)" style="width:28px;height:28px;font-size:0.9rem;padding:0;line-height:28px;">+</button>
+            </div>
+          </div>
         </div>
 
-        <div class="table-wrap">
-          <table id="cartTable">
-            <thead>
-              <tr>
-                <th class="col-kode">Kode</th>
-                <th>Nama</th>
-                <th class="right col-qty">Qty</th>
-                <th class="right col-harga">Harga / Level</th>
-                <th class="right col-total">Total</th>
-                <th class="col-aksi">Aksi</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-            <tfoot>
-              <tr>
-                <th colspan="5" class="right">Subtotal</th>
-                <th class="right" id="subtotal">0</th>
-              </tr>
-              <tr>
-                <th colspan="5" class="right">Diskon</th>
-                <th class="right" id="tdiscount">0</th>
-              </tr>
-              <tr>
-                <th colspan="5" class="right">PPN</th>
-                <th class="right" id="ttax">0</th>
-              </tr>
-              <tr>
-                <th colspan="5" class="right">Potongan Poin</th>
-                <th class="right" id="tpointdisc">0</th>
-              </tr>
-              <tr>
-                <th colspan="5" class="right"><strong>Total</strong></th>
-                <th class="right" id="gtotal"><strong>0</strong></th>
-              </tr>
-            </tfoot>
-          </table>
+        <!-- Cart Table Card -->
+        <div class="card card-table">
+          <div class="table-topinfo">
+            <span>Baris: <strong id="totalRows">0</strong></span>
+            <span>•</span>
+            <span>Item: <strong id="totalItemsMini">0</strong></span>
+          </div>
+
+          <div class="table-wrap">
+            <table id="cartTable">
+              <thead>
+                <tr>
+                  <th class="col-kode">Kode</th>
+                  <th>Nama</th>
+                  <th class="right col-qty">Qty</th>
+                  <th class="right col-harga">Harga / Level</th>
+                  <th class="right col-total">Total</th>
+                  <th class="col-aksi">Aksi</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+              <tfoot>
+                <tr>
+                  <th colspan="5" class="right">Subtotal</th>
+                  <th class="right" id="subtotal">0</th>
+                </tr>
+                <tr>
+                  <th colspan="5" class="right">Diskon</th>
+                  <th class="right" id="tdiscount">0</th>
+                </tr>
+                <tr>
+                  <th colspan="5" class="right">PPN</th>
+                  <th class="right" id="ttax">0</th>
+                </tr>
+                <tr>
+                  <th colspan="5" class="right">Potongan Poin</th>
+                  <th class="right" id="tpointdisc">0</th>
+                </tr>
+                <tr>
+                  <th colspan="5" class="right"><strong>Total</strong></th>
+                  <th class="right" id="gtotal"><strong>0</strong></th>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
         </div>
+
       </div>
 
-      <div class="card panel-bottom" style="display:flex;flex-direction:column;gap:var(--gap)">
+      <!-- COLUMN RIGHT (Checkout & Hold) -->
+      <div id="tab-right-cols" class="tab-right-wrapper">
 
-        <!-- Member -->
-        <div class="kps">
-          <label>Member (Kode)
-            <div class="memberRow">
-              <input list="memberlist" id="member_kode" placeholder="Ketik kode member" autocomplete="off">
-              <button type="button" class="btn btn-mini" id="btnMemberSearch" title="Cari Member (Buka Master Member)">Cari</button>
+        <!-- Checkout Card -->
+        <div id="tab-checkout" class="tab-section">
+          <div class="card panel-bottom" style="display:flex;flex-direction:column;gap:var(--gap)">
+            <!-- Member -->
+            <div class="kps">
+              <label>Member (Kode)
+                <div class="memberRow">
+                  <input list="memberlist" id="member_kode" placeholder="Ketik kode member" autocomplete="off">
+                  <button type="button" class="btn btn-mini" id="btnMemberSearch" title="Cari Member (Buka Master Member)">Cari</button>
+                </div>
+
+                <datalist id="memberlist">
+                  <?php
+                  try{
+                    $mm = $pdo->query("SELECT kode, nama FROM members ORDER BY created_at DESC LIMIT 200")->fetchAll(PDO::FETCH_ASSOC);
+                    foreach($mm as $m){
+                      echo '<option value="'.htmlspecialchars($m['kode']).'">'.htmlspecialchars($m['nama']).'</option>';
+                    }
+                  }catch(Throwable $e){}
+                  ?>
+                </datalist>
+              </label>
+
+              <label>Nama Member
+                <input type="text" id="member_nama" readonly value="">
+              </label>
+
+              <label>Poin Tersedia
+                <input type="number" id="member_poin" readonly value="0">
+              </label>
             </div>
 
-            <datalist id="memberlist">
-              <?php
-              try{
-                $mm = $pdo->query("SELECT kode, nama FROM members ORDER BY created_at DESC LIMIT 200")->fetchAll(PDO::FETCH_ASSOC);
-                foreach($mm as $m){
-                  echo '<option value="'.htmlspecialchars($m['kode']).'">'.htmlspecialchars($m['nama']).'</option>';
-                }
-              }catch(Throwable $e){}
-              ?>
-            </datalist>
-          </label>
+            <!-- Poin, Diskon, PPN -->
+            <div class="kps">
+              <div>
+                <div class="muted">Poin Ditukar</div>
+                <div class="row">
+                  <input type="number" id="poin_ditukar" min="0" value="0" inputmode="numeric">
+                </div>
+                <div class="muted">Potongan dari Poin: <span id="poin_potongan_view">0</span></div>
+              </div>
 
-          <label>Nama Member
-            <input type="text" id="member_nama" readonly value="">
-          </label>
+              <div>
+                <div class="muted">Diskon</div>
+                <div class="row">
+                  <input type="number" id="discount" min="0" value="0" inputmode="numeric">
+                  <select id="discountMode" aria-label="Mode Diskon">
+                    <option value="rp">Rp</option>
+                    <option value="pct">%</option>
+                  </select>
+                </div>
+              </div>
 
-          <label>Poin Tersedia
-            <input type="number" id="member_poin" readonly value="0">
-          </label>
+              <div>
+                <div class="muted">PPN</div>
+                <div class="row">
+                  <input type="number" id="tax" min="0" value="0" inputmode="numeric">
+                  <select id="taxMode" aria-label="Mode Pajak">
+                    <option value="rp">Rp</option>
+                    <option value="pct">%</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Metode Pembayaran -->
+            <div class="kps">
+              <div>
+                <div class="muted">Metode Pembayaran</div>
+                <select id="payMode">
+                  <option value="cash">Tunai</option>
+                  <option value="ar">Piutang Member</option>
+                </select>
+              </div>
+
+              <div>
+                <div class="muted">Tunai</div>
+                <input type="text" id="tunai" value="0" inputmode="numeric">
+                <div class="quick-cash-row" style="display:flex;gap:0.25rem;margin-top:0.35rem;flex-wrap:wrap;">
+                  <button type="button" class="btn btn-mini" onclick="setQuickCash('pas')" style="padding:0.2rem 0.4rem;font-size:0.75rem;cursor:pointer;">Uang Pas</button>
+                  <button type="button" class="btn btn-mini" onclick="setQuickCash(20000)" style="padding:0.2rem 0.4rem;font-size:0.75rem;cursor:pointer;">20k</button>
+                  <button type="button" class="btn btn-mini" onclick="setQuickCash(50000)" style="padding:0.2rem 0.4rem;font-size:0.75rem;cursor:pointer;">50k</button>
+                  <button type="button" class="btn btn-mini" onclick="setQuickCash(100000)" style="padding:0.2rem 0.4rem;font-size:0.75rem;cursor:pointer;">100k</button>
+                </div>
+              </div>
+
+              <div>
+                <div class="muted">Kembalian</div>
+                <input type="text" id="kembalian" readonly value="0">
+              </div>
+            </div>
+
+            <!-- Checkout Action Button -->
+            <div class="kps" style="grid-template-columns:1fr">
+              <div class="row" style="gap:.65rem;flex-wrap:wrap">
+                <button class="btn" id="btnSave" type="button" style="flex:1;min-width:180px;padding:0.75rem;font-weight:700;">Simpan &amp; Cetak</button>
+                <a class="btn" id="btnReport" href="sales_report.php" target="_blank" rel="noopener" style="padding:0.75rem;font-weight:700;">Laporan Transaksi</a>
+                <span class="muted" style="flex:1;min-width:260px;font-size:0.8rem;text-align:left;display:block;margin-top:0.25rem;">
+                  💡 Petunjuk: Ketuk tombol 📷 **Scan** untuk scan menggunakan kamera HP, atau tombol 🔍 **Cari** untuk mencari barang secara manual.
+                </span>
+              </div>
+            </div>
+
+          </div>
         </div>
 
-        <!-- Poin, Diskon, PPN -->
-        <div class="kps">
-          <div>
-            <div class="muted">Poin Ditukar</div>
-            <div class="row">
-              <input type="number" id="poin_ditukar" min="0" value="0" inputmode="numeric">
-            </div>
-            <div class="muted">Potongan dari Poin: <span id="poin_potongan_view">0</span></div>
-          </div>
+        <!-- Hold Card -->
+        <div id="tab-hold" class="tab-section">
+          <div class="card panel-bottom" style="display:flex;flex-direction:column;gap:var(--gap)">
+            <header style="font-weight:650;margin-bottom:.45rem">Transaksi Tertunda (Hold)</header>
+            <div class="kps" style="grid-template-columns:1fr">
+              <div class="row" style="gap:.65rem;flex-wrap:wrap">
+                <button class="btn" type="button" data-park="1">Tunda 1</button>
+                <button class="btn" type="button" data-park="2">Tunda 2</button>
+                <button class="btn" type="button" data-park="3">Tunda 3</button>
 
-          <div>
-            <div class="muted">Diskon</div>
-            <div class="row">
-              <input type="number" id="discount" min="0" value="0" inputmode="numeric">
-              <select id="discountMode" aria-label="Mode Diskon">
-                <option value="rp">Rp</option>
-                <option value="pct">%</option>
-              </select>
-            </div>
-          </div>
+                <button class="btn" type="button" data-resume="1">Lanjut 1</button>
+                <button class="btn" type="button" data-resume="2">Lanjut 2</button>
+                <button class="btn" type="button" data-resume="3">Lanjut 3</button>
+              </div>
 
-          <div>
-            <div class="muted">PPN</div>
-            <div class="row">
-              <input type="number" id="tax" min="0" value="0" inputmode="numeric">
-              <select id="taxMode" aria-label="Mode Pajak">
-                <option value="rp">Rp</option>
-                <option value="pct">%</option>
-              </select>
+              <div class="row" id="heldInfoRow" style="margin-top:.5rem;flex-wrap:wrap;gap:0.35rem;">
+                <span class="held-slot held-empty" id="heldSlot1" style="margin-right:0;">Tunda 1: Kosong</span>
+                <span class="held-slot held-empty" id="heldSlot2" style="margin-right:0;">Tunda 2: Kosong</span>
+                <span class="held-slot held-empty" id="heldSlot3" style="margin-right:0;">Tunda 3: Kosong</span>
+              </div>
+
+              <div class="row no-print" style="margin-top:.5rem;flex-wrap:wrap;gap:.4rem">
+                <button class="btn" type="button" data-clear="1" style="padding:.3rem .5rem;font-size:.78rem;">Hapus Tunda 1</button>
+                <button class="btn" type="button" data-clear="2" style="padding:.3rem .5rem;font-size:.78rem;">Hapus Tunda 2</button>
+                <button class="btn" type="button" data-clear="3" style="padding:.3rem .5rem;font-size:.78rem;">Hapus Tunda 3</button>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Metode Pembayaran -->
-<div class="kps">
-  <div>
-    <div class="muted">Metode Pembayaran</div>
-    <select id="payMode">
-      <option value="cash">Tunai</option>
-      <option value="ar">Piutang Member</option>
-    </select>
-  </div>
-
-  <div>
-    <div class="muted">Tunai</div>
-    <input type="text" id="tunai" value="0" inputmode="numeric">
-  </div>
-
-  <div>
-    <div class="muted">Kembalian</div>
-    <input type="text" id="kembalian" readonly value="0">
-  </div>
-</div>
-        <!-- Tombol & Parkir -->
-        <div class="kps" style="grid-template-columns:1fr">
-          <div class="row" style="gap:.65rem;flex-wrap:wrap">
-            <button class="btn" id="btnSave" type="button">Simpan &amp; Cetak</button>
-
-            <button class="btn" type="button" data-park="1">Tunda 1</button>
-            <button class="btn" type="button" data-park="2">Tunda 2</button>
-            <button class="btn" type="button" data-park="3">Tunda 3</button>
-
-            <button class="btn" type="button" data-resume="1">Lanjut 1</button>
-            <button class="btn" type="button" data-resume="2">Lanjut 2</button>
-            <button class="btn" type="button" data-resume="3">Lanjut 3</button>
-
-            <a class="btn" id="btnReport" href="sales_report.php" target="_blank" rel="noopener">Laporan</a>
-
-            <span class="muted" style="flex:1;min-width:260px">
-              F5: Fokus Member • Shift+F5: Cari Member • F6: Barcode • F7: Set Qty Scan Berikutnya •
-              F4: Tunai • F8: Poin • F9: Diskon • F10: Simpan • F3: Laporan • F2: Cari Barang • F1: Bayar Cepat
-            </span>
-          </div>
-
-          <div class="row" id="heldInfoRow" style="margin-top:.25rem;flex-wrap:wrap;">
-            <span class="held-slot held-empty" id="heldSlot1">Tunda 1: Kosong</span>
-            <span class="held-slot held-empty" id="heldSlot2">Tunda 2: Kosong</span>
-            <span class="held-slot held-empty" id="heldSlot3">Tunda 3: Kosong</span>
-          </div>
-
-          <div class="row no-print" style="margin-top:.2rem;flex-wrap:wrap;gap:.4rem">
-            <button class="btn" type="button" data-clear="1">Hapus Tunda 1</button>
-            <button class="btn" type="button" data-clear="2">Hapus Tunda 2</button>
-            <button class="btn" type="button" data-clear="3">Hapus Tunda 3</button>
-          </div>
-        </div>
       </div>
 
     </div>
@@ -817,7 +1257,39 @@ if ($redeem_grosir <= 0) $redeem_grosir = 25;
 
   function updateNextQtyInfo(){
     if (nextQtyValueEl) nextQtyValueEl.textContent = String(nextScanQty);
+    const inputEl = document.getElementById('nextScanQtyInput');
+    if (inputEl) inputEl.value = String(nextScanQty);
   }
+
+  window.adjustNextScanQty = function(amount) {
+    let current = parseInt(nextScanQty || 1, 10);
+    let target = current + amount;
+    if (target < 1) target = 1;
+    nextScanQty = target;
+    updateNextQtyInfo();
+  };
+
+  window.setNextScanQty = function(val) {
+    let n = parseInt(val, 10);
+    if (!n || n < 1) n = 1;
+    nextScanQty = n;
+    updateNextQtyInfo();
+  };
+
+  window.setQuickCash = function(val) {
+    let nominal = 0;
+    if (val === 'pas') {
+      const subtotal = unformat(subtotalEl.textContent);
+      const disc = unformat(tdiscountEl.textContent);
+      const tax  = unformat(ttaxEl.textContent);
+      const pdisc = unformat(tpointdiscEl.textContent);
+      nominal = Math.max(0, subtotal - disc + tax - pdisc);
+    } else {
+      nominal = parseInt(val, 10) || 0;
+    }
+    tunaiEl.value = formatID(nominal);
+    hitungKembalian();
+  };
 
   // =========================
   // Kunci tinggi keranjang: tampil 25 baris (presisi)
@@ -1223,6 +1695,15 @@ payModeEl.addEventListener('change', () => {
     focusBarcode();
   }
 
+  window.adjustQty = function(idx, amount) {
+    if (cart[idx]) {
+      let v = parseInt(cart[idx].qty || 1, 10) + amount;
+      cart[idx].qty = v > 0 ? v : 1;
+      activeIdx = idx;
+      renderCart();
+    }
+  };
+
   function renderCart(opts = {}){
     // backward compatible: kalau masih ada pemanggilan renderCart(true/false)
     if (typeof opts === 'boolean') opts = { focusLastQty: opts };
@@ -1253,7 +1734,13 @@ payModeEl.addEventListener('change', () => {
 
       tr.innerHTML=`<td class="col-kode">${r.kode}</td>
                     <td>${r.nama}</td>
-                    <td class="right col-qty"><input type="number" min="1" value="${r.qty}" class="qtyInput"></td>
+                    <td class="right col-qty">
+                      <div class="qty-stepper">
+                        <button type="button" class="stepper-btn dec-btn" onclick="adjustQty(${idx}, -1)">−</button>
+                        <input type="number" min="1" value="${r.qty}" class="qtyInput">
+                        <button type="button" class="stepper-btn inc-btn" onclick="adjustQty(${idx}, 1)">+</button>
+                      </div>
+                    </td>
                     <td class="right col-harga">
                       <div class="priceRow">
                         <span class="priceText">${formatID(harga)}</span>
@@ -1776,10 +2263,220 @@ const payload = {
 
   window.addEventListener('resize', () => fitCartToRows(null));
 
+  // =========================
+  // BEEP SOUND SYNTHESIS
+  // =========================
+  function playBeep() {
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(1000, audioCtx.currentTime); // 1000Hz tone
+      gainNode.gain.setValueAtTime(0.12, audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15); // fade out
+      
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.15);
+    } catch (e) {
+      console.warn("AudioContext error: ", e);
+    }
+  }
+
+  // =========================
+  // MOBILE TABS CONTROL
+  // =========================
+  window.switchTab = function(tabName) {
+    document.querySelectorAll('.tab-section').forEach(sec => {
+      sec.classList.remove('active');
+    });
+    const targetSec = document.getElementById(`tab-${tabName}`);
+    if (targetSec) targetSec.classList.add('active');
+    
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.classList.remove('active');
+    });
+    
+    let btnId = 'tabBtnCart';
+    if (tabName === 'checkout') btnId = 'tabBtnCheckout';
+    else if (tabName === 'hold') btnId = 'tabBtnHold';
+    
+    const targetBtn = document.getElementById(btnId);
+    if (targetBtn) targetBtn.classList.add('active');
+    
+    if (tabName === 'cart') {
+      setTimeout(() => focusBarcode(), 80);
+    }
+  };
+
+  // =========================
+  // CAMERA BARCODE SCANNER LOGIC
+  // =========================
+  let html5QrScanner = null;
+  let isScanning = false;
+  let lastScannedCode = "";
+  let lastScannedTime = 0;
+
+  window.openCameraScanner = async function() {
+    const modal = document.getElementById('cameraModal');
+    if (!modal) return;
+    modal.classList.add('show');
+    
+    const selectEl = document.getElementById('cameraSelect');
+    selectEl.innerHTML = '';
+    
+    try {
+      const devices = await Html5Qrcode.getCameras();
+      if (devices && devices.length > 0) {
+        devices.forEach(device => {
+          const opt = document.createElement('option');
+          opt.value = device.id;
+          opt.textContent = device.label || `Kamera ${selectEl.options.length + 1}`;
+          selectEl.appendChild(opt);
+        });
+        
+        let backCamera = devices.find(device => 
+          device.label.toLowerCase().includes('back') || 
+          device.label.toLowerCase().includes('rear') ||
+          device.label.toLowerCase().includes('environment') ||
+          device.label.toLowerCase().includes('belakang')
+        );
+        if (backCamera) {
+          selectEl.value = backCamera.id;
+        }
+        
+        selectEl.onchange = () => {
+          startScanning(selectEl.value);
+        };
+        
+        await startScanning(selectEl.value);
+      } else {
+        alert("Kamera tidak ditemukan.");
+        closeCameraScanner();
+      }
+    } catch (err) {
+      console.error("Gagal mendeteksi kamera:", err);
+      alert("Gagal mendeteksi kamera: " + err.message);
+      closeCameraScanner();
+    }
+  };
+
+  async function startScanning(cameraId) {
+    if (html5QrScanner) {
+      try {
+        await html5QrScanner.stop();
+      } catch (e) {
+        console.warn(e);
+      }
+    }
+    
+    html5QrScanner = new Html5Qrcode("qr-reader");
+    isScanning = true;
+    
+    try {
+      await html5QrScanner.start(
+        cameraId,
+        {
+          fps: 15,
+          qrbox: function(width, height) {
+            let minEdge = Math.min(width, height);
+            let boxWidth = Math.floor(minEdge * 0.75);
+            let boxHeight = Math.floor(boxWidth * 0.45); // narrow rectangular box for barcodes
+            return { width: boxWidth, height: boxHeight };
+          },
+          aspectRatio: 1.333333
+        },
+        (decodedText, decodedResult) => {
+          onScanSuccess(decodedText);
+        },
+        (errorMessage) => {
+          // Ignore scanning parsing errors
+        }
+      );
+    } catch (err) {
+      console.error("Gagal memulai scanner:", err);
+    }
+  }
+
+  window.closeCameraScanner = async function() {
+    const modal = document.getElementById('cameraModal');
+    if (modal) modal.classList.remove('show');
+    
+    isScanning = false;
+    if (html5QrScanner) {
+      try {
+        await html5QrScanner.stop();
+        html5QrScanner = null;
+      } catch (e) {
+        console.warn("Gagal menonaktifkan kamera:", e);
+      }
+    }
+    focusBarcode();
+  };
+
+  function onScanSuccess(decodedText) {
+    const now = Date.now();
+    if (decodedText === lastScannedCode && (now - lastScannedTime) < 1800) {
+      return; // prevent duplicate rapid scans
+    }
+    
+    lastScannedCode = decodedText;
+    lastScannedTime = now;
+    
+    playBeep();
+    enqueueScan(decodedText);
+    
+    const autoClose = document.getElementById('scanAutoClose').checked;
+    if (autoClose) {
+      closeCameraScanner();
+    }
+  }
+
+  // Bind camera button
+  const btnScanCamera = document.getElementById('btnScanCamera');
+  if (btnScanCamera) {
+    btnScanCamera.addEventListener('click', openCameraScanner);
+  }
+
+  // Bind mobile search item button
+  const btnItemSearchMobile = document.getElementById('btnItemSearchMobile');
+  if (btnItemSearchMobile) {
+    btnItemSearchMobile.addEventListener('click', openItemPicker);
+  }
+
   setTimeout(() => {
     fitCartToRows(null);
     focusBarcode();
   }, 80);
 </script>
+
+  <!-- Modal Scanner Kamera -->
+  <div id="cameraModal" class="no-print" role="dialog" aria-modal="true" aria-label="Scan Barcode">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Pindai Barcode</h3>
+        <button type="button" class="close-modal-btn" onclick="closeCameraScanner()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="camera-select-row">
+          <label for="cameraSelect">Pilih Kamera:</label>
+          <select id="cameraSelect"></select>
+        </div>
+        <div id="qr-reader-wrap">
+          <div id="qr-reader"></div>
+        </div>
+        <div class="modal-settings">
+          <label class="toggle-container">
+            <input type="checkbox" id="scanAutoClose" checked>
+            <span>Tutup otomatis setelah scan</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

@@ -111,6 +111,16 @@ $history = $stmt->fetchAll();
   }
 
   .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:.7rem; }
+
+  /* Scan-row: input + scan button side by side */
+  .scan-row { display: flex; gap: .35rem; align-items: center; }
+  .scan-row input { flex: 1; margin: 0; }
+  .btn-scan-opname {
+    background: #0284c7; color: #fff; border: 1px solid #0369a1;
+    border-radius: .45rem; padding: .45rem .75rem;
+    font-size: .85rem; font-weight: 600; cursor: pointer;
+    white-space: nowrap; flex-shrink: 0;
+  }
   .form-card{border:1px solid var(--card-bd); border-radius:12px; padding:1rem; background:var(--card-bg); margin-bottom:1rem; color:var(--text-main);}
   .form-card label { color: var(--text-main); font-weight: 600; }
   .table-small{ width:100%; border-collapse:collapse; font-size:.82rem; color:var(--text-main);}
@@ -190,8 +200,11 @@ $history = $stmt->fetchAll();
         </select>
       </label>
       
-      <label>Barang (F2)
-        <input type="text" id="item_input" list="itemlist" placeholder="Kode/Barcode/Nama" autocomplete="off">
+      <label>Cari / Scan Barang (F2)
+        <div class="scan-row">
+          <input type="text" id="item_input" list="itemlist" placeholder="Kode/Barcode/Nama" autocomplete="off">
+          <button type="button" class="btn-scan-opname" onclick="if(window.openGlobalScanner) openGlobalScanner(document.getElementById('item_input'))">📷 Scan</button>
+        </div>
         <datalist id="itemlist">
           <?php foreach($items as $it): ?>
             <option value="<?= htmlspecialchars($it['kode']) ?>"><?= htmlspecialchars($it['nama']) ?></option>
@@ -217,8 +230,8 @@ $history = $stmt->fetchAll();
     </div>
 
     <div class="toolbar">
-      <button type="button" id="btnAddToBatch">Tambah ke Daftar</button>
-      <button type="button" id="btnOpenItemSearch" onclick="openModal()">Cari Barang (F2)</button>
+      <button type="button" id="btnAddToBatch">✅ Tambah ke Daftar</button>
+      <button type="button" id="btnOpenItemSearch" onclick="openModal()">🔍 Cari Barang (F2)</button>
     </div>
 
     <div style="margin-top:1rem;">

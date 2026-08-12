@@ -287,3 +287,56 @@ function log_activity(PDO $pdo, string $action, string $description): void {
     // Ignored here, handled by centralized updater
   }
 }
+
+/**
+ * Hitung ringkasan laba rugi untuk rentang tanggal tertentu.
+ * - Sales Net = Total Penjualan (sales.total)
+ * - Total HPP = SUM(sale_items.qty * items.harga_beli)
+ * - Laba = Sales Net - Total HPP
+ */
+function get_profit_summary(PDO $pdo, string $fromDate, string $toDate): array {
+  // 1. Omzet Penjualan & Diskon
+  $stSales = $pdo->prepare("
+    SELECT 
+      COALESCE(SUM(total), 0) AS total_sales,
+      COALESCE(SUM(subtotal), 0) AS total_subtotal,
+      COALESCE(SUM(discount + COALESCE(point_discount, 0)), 0) AS total_discount,
+      COALESCE(SUM(tax), 0) AS total_tax,
+      COUNT(id) AS trx_count
+    FROM sales
+    WHERE (status IS NULL OR status = 'OK')
+      AND DATE(created_at) BETWEEN :from AND :to
+  ");
+  $stSales->execute([':from' => $fromDate, ':to' => $toDate]);
+  $salesData = $stSales->fetch(PDO::FETCH_ASSOC) ?: [];
+
+  // 2. HPP (Harga Pokok Penjualan)
+  $stHpp = $pdo->prepare("
+    SELECT 
+      COALESCE(SUM(si.qty * COALESCE(i.harga_beli, 0)), 0) AS total_hpp
+    FROM sale_items si
+    JOIN sales s ON s.id = si.sale_id
+    LEFT JOIN items i ON i.kode = si.item_kode
+    WHERE (s.status IS NULL OR s.status = 'OK')
+      AND DATE(s.created_at) BETWEEN :from AND :to
+  ");
+  $stHpp->execute([':from' => $fromDate, ':to' => $toDate]);
+  $hppData = $stHpp->fetch(PDO::FETCH_ASSOC) ?: [];
+
+  $totalSales = (int)($salesData['total_sales'] ?? 0);
+  $totalHpp   = (int)($hppData['total_hpp'] ?? 0);
+  $laba       = $totalSales - $totalHpp;
+  $marginPct  = $totalSales > 0 ? round(($laba / $totalSales) * 100, 1) : 0;
+
+  return [
+    'total_sales'    => $totalSales,
+    'total_subtotal' => (int)($salesData['total_subtotal'] ?? 0),
+    'total_discount' => (int)($salesData['total_discount'] ?? 0),
+    'total_tax'      => (int)($salesData['total_tax'] ?? 0),
+    'trx_count'      => (int)($salesData['trx_count'] ?? 0),
+    'total_hpp'      => $totalHpp,
+    'laba'           => $laba,
+    'margin_pct'     => $marginPct
+  ];
+}
+

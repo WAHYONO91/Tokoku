@@ -178,6 +178,15 @@ try {
   0% { background-color: rgba(59, 130, 246, 0.3); }
   100% { background-color: transparent; }
 }
+.scan-row { display: flex; gap: .35rem; align-items: center; }
+.scan-row input { flex: 1; margin: 0; }
+.btn-scan-purchase {
+  background: #0284c7 !important; color: #fff !important; border: 1px solid #0369a1 !important;
+  border-radius: .45rem; padding: .45rem .75rem;
+  font-size: .85rem; font-weight: 600; cursor: pointer;
+  white-space: nowrap; flex-shrink: 0; margin: 0 !important;
+  line-height: 1.2 !important; height: auto !important;
+}
 </style>
 
 <article>
@@ -213,12 +222,15 @@ try {
 
     <article style="background:var(--table-row-hover); border:1px solid var(--table-border);">
       <header>Scan / Ketik Barcode / Nama Barang lalu Enter (F2 untuk cari barang)</header>
-      <input
-        id="barcode"
-        placeholder="Barcode / Kode / Nama Barang"
-        autofocus
-        list="itemlist"
-      >
+      <div class="scan-row">
+        <input
+          id="barcode"
+          placeholder="Barcode / Kode / Nama Barang"
+          autofocus
+          list="itemlist"
+        >
+        <button type="button" class="btn-scan-purchase" onclick="if(window.openGlobalScanner) openGlobalScanner(document.getElementById('barcode'))">📷 Scan</button>
+      </div>
 
       <datalist id="itemlist">
         <?php

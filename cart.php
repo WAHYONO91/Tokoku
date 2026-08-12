@@ -14,6 +14,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['delete_item'])) {
         $del_kode = $_POST['delete_item'];
         unset($_SESSION['cart'][$del_kode]);
+        // Also remove custom price for this item if it exists
+        if (isset($_SESSION['cart_custom_prices'][$del_kode])) {
+            unset($_SESSION['cart_custom_prices'][$del_kode]);
+        }
         header('Location: cart.php?deleted=1');
         exit;
     }
@@ -44,12 +48,18 @@ if (!empty($cart)) {
     
     foreach ($items_db as $item) {
         $kode = $item['kode'];
-        $qty = $cart[$kode];
-        $subtotal = $qty * $item['harga_jual1'];
+        $qty  = $cart[$kode];
+        // Use custom promo price if set, otherwise normal selling price
+        $custom_prices = $_SESSION['cart_custom_prices'] ?? [];
+        $harga = isset($custom_prices[$kode]) ? (int)$custom_prices[$kode] : $item['harga_jual1'];
+        $is_promo = isset($custom_prices[$kode]);
+        $subtotal = $qty * $harga;
         $total += $subtotal;
-        
-        $item['qty'] = $qty;
-        $item['subtotal'] = $subtotal;
+
+        $item['harga_jual1'] = $harga;  // override for display
+        $item['qty']         = $qty;
+        $item['subtotal']    = $subtotal;
+        $item['is_promo']    = $is_promo;
         $cart_items[] = $item;
     }
 }
@@ -69,6 +79,17 @@ require_once __DIR__ . '/includes/shop_header.php';
     <?php endif; ?>
     <?php if (isset($_GET['deleted'])): ?>
         <mark style="display:block;margin-bottom:1rem;background:#dc2626;color:#fff;">🗑️ Barang dihapus dari keranjang.</mark>
+    <?php endif; ?>
+    <?php if (isset($_GET['promo_added'])): ?>
+        <mark style="display:block;margin-bottom:1.2rem;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:0.8rem 1rem;border-radius:10px;font-weight:700;">
+            🎉 Selamat! Barang promo berhasil masuk ke keranjang dengan harga spesial!
+        </mark>
+    <?php endif; ?>
+    <?php if (!empty($_SESSION['claimed_promo'])): ?>
+        <div style="background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.35); border-radius:10px; padding:0.65rem 1rem; margin-bottom:1rem; font-size:0.85rem; display:flex; justify-content:space-between; align-items:center;">
+            <span>🎟️ <strong>Promo aktif:</strong> <?= htmlspecialchars($_SESSION['claimed_promo']) ?></span>
+            <a href="shop.php?cancel_promo=1" style="font-size:0.75rem; color:#ef4444;">✕ Batalkan</a>
+        </div>
     <?php endif; ?>
 
     <?php if (empty($cart_items)): ?>
@@ -135,8 +156,18 @@ require_once __DIR__ . '/includes/shop_header.php';
                                         <div style="width:60px; height:40px; background:#1e293b; color:#94a3b8; display:flex; align-items:center; justify-content:center; font-size:10px; border-radius:4px;">No IMG</div>
                                     <?php endif; ?>
                                 </td>
-                                <td data-label="Produk"><?= htmlspecialchars($item['nama']) ?></td>
-                                <td data-label="Harga" class="right"><?= rupiah($item['harga_jual1']) ?></td>
+                                <td data-label="Produk">
+                                    <?= htmlspecialchars($item['nama']) ?>
+                                    <?php if (!empty($item['is_promo'])): ?>
+                                        <span style="display:inline-block; margin-left:0.4rem; background:#f59e0b; color:#fff; font-size:0.65rem; font-weight:800; padding:0.1rem 0.45rem; border-radius:99px;">🔥 PROMO</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td data-label="Harga" class="right">
+                                    <?= rupiah($item['harga_jual1']) ?>
+                                    <?php if (!empty($item['is_promo'])): ?>
+                                        <div style="font-size:0.7rem; color:#10b981; font-weight:700;">Harga Promo</div>
+                                    <?php endif; ?>
+                                </td>
                                 <td data-label="Qty" class="center">
                                     <input type="number" name="qty[<?= htmlspecialchars($item['kode']) ?>]" value="<?= $item['qty'] ?>" min="1" style="width:80px; margin:0; padding: 0.3rem;">
                                     <span style="font-size:0.8rem; color:var(--text-muted, #94a3b8); display:block;"><?= htmlspecialchars($item['unit_code']) ?></span>

@@ -142,29 +142,37 @@ $cssLineHeight   = number_format($paperLineHeight, 2, '.', '');
       overflow-wrap:break-word;
       padding-left: <?= $cssTextMargin ?>;
       padding-right: <?= $cssTextMargin ?>;
+      width:100%; max-width:<?= $cssPaperWidth ?>mm; background: #ffffff; color: #000000;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4); border-radius: 4px;
+      font-family:monospace; font-size:<?= (int)$paperFontSize ?>px; line-height:<?= $cssLineHeight ?>;
+      word-wrap:break-word; overflow-wrap:break-word; padding:14px <?= $cssTextMargin ?>; box-sizing: border-box;
     }
     .struk table { width:100%; border-collapse:collapse; }
     .struk td { padding:2px 0; vertical-align:top; }
     .right { text-align:right; }
     hr { border:0; border-top:1px dashed #000; margin:4px 0; }
     .struk, .struk * { page-break-inside: avoid; }
-    @media print { .no-print { display:none; } }
   </style>
-
-  <script>
-  (function () {
-    window.addEventListener('load', function () {
-      setTimeout(function () {
-        try { window.focus(); } catch (e) {}
-        try { window.print(); } catch (e) {}
-      }, 50);
-    });
-  })();
-  </script>
+  <script src="/tokoapp/assets/vendor/nota_exporter.js"></script>
 </head>
 
 <body>
-<div class="struk">
+
+<div class="no-print-toolbar">
+  <div class="toolbar-title">
+    📦 Preview Struk Pesanan Online
+    <span style="font-size:12px; opacity:0.75; font-weight:normal;">(<?= htmlspecialchars($order['order_no'] ?? ('#'.$order['id'])) ?>)</span>
+  </div>
+  <div class="toolbar-buttons">
+    <button type="button" class="btn-action btn-print" onclick="window.print()">🖨️ Cetak</button>
+    <button type="button" class="btn-action btn-jpg" onclick="NotaExporter.downloadJPG(document.getElementById('strukContent'), 'OnlineOrder_<?= htmlspecialchars($order['order_no'] ?? $order['id']) ?>.jpg')">🖼️ Simpan JPG</button>
+    <button type="button" class="btn-action btn-pdf" onclick="NotaExporter.downloadPDF(document.getElementById('strukContent'), 'OnlineOrder_<?= htmlspecialchars($order['order_no'] ?? $order['id']) ?>.pdf')">📄 Simpan PDF</button>
+    <a href="/tokoapp/online_orders.php" class="btn-action btn-back">⬅️ Pesanan Online</a>
+  </div>
+</div>
+
+<div class="struk-wrapper">
+<div class="struk" id="strukContent">
 
   <?php if ($printShowLogo && $logoUrl && $logoAlign !== 'none'): ?>
     <div style="text-align:<?= htmlspecialchars($logoAlign) ?>;margin-bottom:2px;">
@@ -260,6 +268,7 @@ $cssLineHeight   = number_format($paperLineHeight, 2, '.', '');
     <a href="javascript:window.close();" style="text-decoration:none; padding:4px 8px; border:1px solid #ccc; border-radius:4px; color:#000;">Tutup</a>
   </div>
 
+</div>
 </div>
 </body>
 </html>

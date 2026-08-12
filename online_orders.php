@@ -92,7 +92,18 @@ function payColor($p) {
                         <tr>
                             <td><b><?= str_pad($o['id'], 5, '0', STR_PAD_LEFT) ?></b></td>
                             <td><?= date('d-m-Y H:i', strtotime($o['tanggal'])) ?></td>
-                            <td><?= htmlspecialchars($o['guest_name']) ?><br><small class="muted"><?= htmlspecialchars($o['guest_phone']) ?></small></td>
+                            <td>
+                                <?= htmlspecialchars($o['guest_name']) ?>
+                                <br><small class="muted"><?= htmlspecialchars($o['guest_phone']) ?></small>
+                                <?php
+                                // Detect promo tag in note
+                                if (!empty($o['note']) && strpos($o['note'], '*** BELANJA PROMO:') !== false) {
+                                    preg_match('/\*\*\* BELANJA PROMO: (.+?) \*\*\*/', $o['note'], $promoMatch);
+                                    $promoName = $promoMatch[1] ?? 'Promo';
+                                    echo '<br><span style="display:inline-flex; align-items:center; gap:0.25rem; background:#f59e0b; color:#fff; font-size:0.68rem; font-weight:700; padding:0.15rem 0.5rem; border-radius:20px; margin-top:0.2rem; text-transform:uppercase; letter-spacing:0.03em;">🎁 PROMO: ' . htmlspecialchars($promoName) . '</span>';
+                                }
+                                ?>
+                            </td>
                             <td><?= htmlspecialchars($o['payment_method']) ?></td>
                             <td class="right" style="font-weight:600;"><?= rupiah($o['total']) ?></td>
                             <td class="center">

@@ -15,8 +15,16 @@ $items = $pdo->prepare("SELECT * FROM sale_items WHERE sale_id=?");
 $items->execute([$id]);
 $items = $items->fetchAll();
 ?>
+<script src="/tokoapp/assets/vendor/nota_exporter.js"></script>
 <?php include __DIR__.'/includes/header.php'; ?>
-<article>
+<article id="fakturArticle">
+  <div class="no-print" style="margin-bottom:15px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; background:#f8fafc; padding:10px 14px; border-radius:6px; border:1px solid #e2e8f0;">
+    <strong style="margin-right:auto;">📄 Preview Faktur #<?=$sale['id']?></strong>
+    <button type="button" class="no-print" onclick="window.print()" style="background:#2563eb; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">🖨️ Cetak</button>
+    <button type="button" class="no-print" onclick="NotaExporter.downloadJPG(document.getElementById('fakturArticle'), 'Faktur_<?=$sale['id']?>.jpg')" style="background:#059669; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">🖼️ Simpan JPG</button>
+    <button type="button" class="no-print" onclick="NotaExporter.downloadPDF(document.getElementById('fakturArticle'), 'Faktur_<?=$sale['id']?>.pdf')" style="background:#d97706; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">📄 Simpan PDF</button>
+    <a class="no-print" href="/tokoapp/pos.php" style="background:#64748b; color:#fff; padding:6px 12px; border-radius:4px; text-decoration:none; display:inline-block;">⬅️ POS Kasir</a>
+  </div>
   <h3>Faktur Penjualan</h3>
   <p><strong>No</strong>: <?=$sale['id']?> &nbsp; <strong>Tanggal</strong>: <?=$sale['tanggal']?> &nbsp; <strong>Kasir</strong>: <?=$sale['username']?> &nbsp; <strong>Shift</strong>: <?=$sale['shift']?></p>
   <?php if($sale['member_kode']): ?>
@@ -45,7 +53,5 @@ $items = $items->fetchAll();
       <tr><th colspan="4" class="right">Poin Didapat</th><th class="right"><?=$sale['poin_didapat']?></th></tr>
     </tfoot>
   </table>
-  <button class="no-print" onclick="window.print()">Cetak</button>
-  <a class="no-print" href="/tokoapp/pos.php">Kembali ke POS</a>
 </article>
 <?php include __DIR__.'/includes/footer.php'; ?>

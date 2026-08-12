@@ -55,3 +55,14 @@ VALUES ('ONLINE_ORDERS', 'Pesanan Online', 1);
 -- 8. Tambahan Kolom lat_lng di online_orders
 ALTER TABLE online_orders
     ADD COLUMN IF NOT EXISTS lat_lng VARCHAR(100) NULL AFTER note;
+-- Tambah modul Pesanan Online (Fitur Baru Hari Ini)
+INSERT IGNORE INTO modules (module_code, module_name, is_active) 
+VALUES ('ONLINE_ORDERS', 'Pesanan Online', 1);
+
+-- Tambah modul Manajemen Modul (Jika belum ada)
+INSERT IGNORE INTO modules (module_code, module_name, is_active) 
+VALUES ('MODULE_MGMT', 'Manajemen Modul', 1);
+
+-- Tambah modul Audit Trail (Untuk pencatatan aktivitas)
+INSERT IGNORE INTO modules (module_code, module_name, is_active) 
+VALUES ('AUDIT_TRAIL', 'Audit Trail', 1);

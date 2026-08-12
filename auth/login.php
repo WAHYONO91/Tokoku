@@ -18,18 +18,8 @@ $app_logo = !empty($setting['logo_url']) ? $setting['logo_url'] : '/tokoapp/uplo
 $app_theme = $setting['theme'] ?? 'dark';
 $is_light  = ($app_theme === 'light');
 
-// cari background dinamis dari /uploads
-$bgUrl    = '';
-$uploadDir = __DIR__ . '/../uploads';
-$webBase   = '/tokoapp/uploads/';
-
-if (is_dir($uploadDir)) {
-    $imgs = glob($uploadDir . '/*.{jpg,jpeg,png,JPG,JPEG,PNG}', GLOB_BRACE);
-    if ($imgs && count($imgs) > 0) {
-        $fname = basename($imgs[0]);
-        $bgUrl = $webBase . $fname;
-    }
-}
+// cari background dari logo toko
+$bgUrl = $app_logo;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $u           = trim($_POST['username'] ?? '');

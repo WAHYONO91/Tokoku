@@ -217,6 +217,7 @@ $app_logo  = !empty($header_setting['logo_url']) ? $header_setting['logo_url'] :
 
   <?php if (module_active('POS_DISPLAY')): ?>
   <a class="menu-card" href="pos_display.php" target="_blank"><span class="menu-icon">🖥️</span>POS Display</a>
+  <a class="menu-card" href="pos_hp.php" target="_blank"><span class="menu-icon">📱</span>POS HP (Layar HP)</a>
   <?php endif; ?>
 
   <?php if (module_active('REPORT_STOCK')): ?>
@@ -268,6 +269,11 @@ $app_logo  = !empty($header_setting['logo_url']) ? $header_setting['logo_url'] :
   <a class="menu-card" href="settings.php"><span class="menu-icon">⚙️</span>Pengaturan</a>
   <?php endif; ?>
 
+  <?php if ($role === 'admin' || $role === 'kasir'): ?>
+  <a class="menu-card" href="shop_settings.php"><span class="menu-icon">🛍️⚙️</span>Pengaturan Shop</a>
+  <?php endif; ?>
+
+
   <?php if (module_active('MODULE_MGMT')): ?>
   <a class="menu-card" href="modules/module_management.php">
     <span class="menu-icon">🧩</span><span>Manajemen Modul</span>
@@ -305,3 +311,121 @@ $app_logo  = !empty($header_setting['logo_url']) ? $header_setting['logo_url'] :
   t(); setInterval(t,1000);
 })();
 </script>
+
+<!-- ===== GLOBAL CAMERA SCANNER MODAL ===== -->
+<style>
+  /* Global Scanner Modal */
+  #globalCameraModal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(2, 6, 23, 0.90);
+    z-index: 99999;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+  #globalCameraModal .gcam-card {
+    background: #111827;
+    border: 1px solid #1f2937;
+    border-radius: 1rem;
+    width: min(480px, 98vw);
+    max-height: 92vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  #globalCameraModal .gcam-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .75rem 1rem;
+    border-bottom: 1px solid #1f2937;
+  }
+  #globalCameraModal .gcam-header h3 {
+    margin: 0;
+    font-size: .95rem;
+    font-weight: 700;
+    color: #e2e8f0;
+  }
+  #globalCameraModal .gcam-close {
+    background: #374151;
+    border: none;
+    border-radius: .5rem;
+    color: #e2e8f0;
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: .2rem .6rem;
+    font-weight: bold;
+  }
+  #globalCameraModal .gcam-body {
+    padding: .75rem 1rem;
+    flex: 1;
+  }
+  #globalCameraModal select {
+    width: 100%;
+    margin-bottom: .6rem;
+    font-size: .85rem;
+    padding: .4rem .6rem;
+    border-radius: .45rem;
+    border: 1px solid #374151;
+    background: #0f172a;
+    color: #e2e8f0;
+  }
+  #global-qr-reader {
+    border-radius: .6rem;
+    overflow: hidden;
+    min-height: 200px;
+    background: #020617;
+  }
+  #globalCameraModal .gcam-settings {
+    padding: .6rem 1rem .9rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    font-size: .8rem;
+    color: #94a3b8;
+  }
+  /* Light mode adjustments */
+  [data-theme="light"] #globalCameraModal .gcam-card {
+    background: #ffffff;
+    border-color: #cbd5e1;
+  }
+  [data-theme="light"] #globalCameraModal .gcam-header h3 { color: #0f172a; }
+  [data-theme="light"] #globalCameraModal select {
+    background: #f8fafc;
+    color: #0f172a;
+    border-color: #cbd5e1;
+  }
+  [data-theme="light"] #globalCameraModal .gcam-close {
+    background: #e2e8f0;
+    color: #0f172a;
+  }
+</style>
+
+<div id="globalCameraModal" role="dialog" aria-modal="true" aria-label="Scan Barcode Kamera">
+  <div class="gcam-card">
+    <div class="gcam-header">
+      <h3>📷 Scan Barcode</h3>
+      <button type="button" class="gcam-close global-close-scanner-btn" onclick="document.getElementById('globalCameraModal').dispatchEvent(new CustomEvent('gcam-close'))">✕</button>
+    </div>
+    <div class="gcam-body">
+      <div id="globalCameraSelectRow">
+        <label for="globalCameraSelect" style="font-size:.8rem;color:#94a3b8;">Pilih Kamera:</label>
+        <select id="globalCameraSelect"></select>
+      </div>
+      <div id="global-qr-reader"></div>
+    </div>
+    <div class="gcam-settings">
+      <input type="checkbox" id="globalScanAutoClose" checked style="width:auto;margin:0;">
+      <label for="globalScanAutoClose" style="margin:0;font-size:.8rem;cursor:pointer;">Tutup otomatis setelah scan</label>
+    </div>
+  </div>
+</div>
+
+<!-- html5-qrcode (offline) -->
+<script src="/tokoapp/assets/vendor/html5-qrcode.min.js"></script>
+<!-- Global scanner logic -->
+<script src="/tokoapp/assets/js/global_scanner.js?v=2.0"></script>
+

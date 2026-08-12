@@ -154,6 +154,16 @@ $mutasi = $listStmt->fetchAll();
   .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:.7rem; }
   .form-card{border:1px solid var(--card-bd); border-radius:12px; padding:1rem; background:var(--card-bg); margin-bottom:1rem; color:var(--text-main);}
   .form-card label { color: var(--text-main); font-weight: 600; }
+
+  /* Scan-row: input + scan button side by side */
+  .scan-row { display: flex; gap: .35rem; align-items: center; }
+  .scan-row input { flex: 1; margin: 0; }
+  .btn-scan-transfer {
+    background: #0284c7; color: #fff; border: 1px solid #0369a1;
+    border-radius: .45rem; padding: .45rem .75rem;
+    font-size: .85rem; font-weight: 600; cursor: pointer;
+    white-space: nowrap; flex-shrink: 0;
+  }
   .table-small{ width:100%; border-collapse:collapse; font-size:.82rem; color:var(--text-main);}
   .table-small th,.table-small td{ border:1px solid var(--card-bd); padding:.4rem .5rem; }
   .right{text-align:right}
@@ -293,15 +303,18 @@ $mutasi = $listStmt->fetchAll();
     <input type="hidden" name="__action" value="mutate">
 
     <div class="grid">
-      <label>Barang (F2 untuk popup)
-        <input
-          type="text"
-          name="item_kode"
-          id="item_kode"
-          list="itemlist"
-          placeholder="Ketik kode/barcode/nama (atau tekan F2)"
-          autocomplete="off"
-        >
+      <label>Cari / Scan Barang (F2)
+        <div class="scan-row">
+          <input
+            type="text"
+            name="item_kode"
+            id="item_kode"
+            list="itemlist"
+            placeholder="Ketik kode/barcode/nama..."
+            autocomplete="off"
+          >
+          <button type="button" class="btn-scan-transfer" onclick="if(window.openGlobalScanner)openGlobalScanner(document.getElementById('item_kode'));">📷 Scan</button>
+        </div>
         <datalist id="itemlist">
           <?php foreach($items as $it){ ?>
             <option value="<?= htmlspecialchars($it['kode']) ?>">
@@ -329,13 +342,13 @@ $mutasi = $listStmt->fetchAll();
     </div>
 
     <div class="toolbar">
-      <button type="button" id="btnAddToBatch">Tambah ke daftar</button>
-      <button type="submit" id="btnSubmitBatch">Proses Mutasi (Batch)</button>
-      <button type="button" id="btnOpenItemSearch">Cari Barang (F2)</button>
+      <button type="button" id="btnAddToBatch">✅ Tambah ke Daftar</button>
+      <button type="submit" id="btnSubmitBatch">🔄 Proses Mutasi</button>
+      <button type="button" id="btnOpenItemSearch">🔍 Cari Barang (F2)</button>
     </div>
 
     <div style="color:#9bb0c9;font-size:.82rem;margin-top:.5rem">
-      Tips: Double klik barang di popup untuk mengisi field Barang, lalu klik "Tambah ke daftar".
+      💡 Tip: Ketuk 📷 Scan untuk scan barcode dengan kamera HP, atau ketuk 🔍 Cari untuk mencari barang.
     </div>
 
     <!-- TABEL BATCH -->
@@ -498,7 +511,7 @@ $mutasi = $listStmt->fetchAll();
       Qty melebihi stok lokasi asal.
     </div>
   `;
-  itemKodeEl.insertAdjacentElement('afterend', stockBox);
+  (itemKodeEl.closest('.scan-row') || itemKodeEl).insertAdjacentElement('afterend', stockBox);
   const warnEl = stockBox.querySelector('#stockWarn');
 
   let lastStock = { gudang: null, toko: null };
