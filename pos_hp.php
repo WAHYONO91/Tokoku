@@ -2216,6 +2216,8 @@ const payload = {
           return;
         }
 
+        monitorPrintWindowClose(w);
+
         const f = document.createElement('form');
         f.method = 'post';
         f.action = 'save_sale.php';
@@ -2234,6 +2236,53 @@ const payload = {
         try { window.focus(); } catch(e){}
       }, 90);
     });
+  }
+
+  // Auto reset POS on print close / message signal
+  let printWindowRef = null;
+  let printCheckTimer = null;
+
+  window.resetPOSForNewTransaction = function() {
+    cart.length = 0;
+    activeIdx = -1;
+    if (typeof memberKodeEl !== 'undefined' && memberKodeEl) memberKodeEl.value = '';
+    if (typeof memberNamaEl !== 'undefined' && memberNamaEl) memberNamaEl.value = '';
+    if (typeof memberPoinEl !== 'undefined' && memberPoinEl) memberPoinEl.value = '0';
+    if (typeof poinDitukarEl !== 'undefined' && poinDitukarEl) poinDitukarEl.value = '0';
+    if (typeof discountEl !== 'undefined' && discountEl) discountEl.value = '0';
+    if (typeof taxEl !== 'undefined' && taxEl) taxEl.value = '0';
+    if (typeof tunaiEl !== 'undefined' && tunaiEl) tunaiEl.value = '0';
+    if (typeof kembalianEl !== 'undefined' && kembalianEl) kembalianEl.value = '0';
+    if (typeof payModeEl !== 'undefined' && payModeEl) {
+      payModeEl.value = 'cash';
+      if (typeof tunaiEl !== 'undefined' && tunaiEl) tunaiEl.disabled = false;
+    }
+    if (typeof setDisplayTotal === 'function') setDisplayTotal();
+    if (typeof renderCart === 'function') renderCart();
+    if (typeof focusBarcode === 'function') focusBarcode();
+  };
+
+  window.addEventListener('message', function(e) {
+    if (e.data === 'reset_pos_transaction') {
+      window.resetPOSForNewTransaction();
+    }
+  });
+
+  if (new URLSearchParams(window.location.search).get('reset') === '1') {
+    window.resetPOSForNewTransaction();
+    try { history.replaceState(null, '', window.location.pathname); } catch(e){}
+  }
+
+  function monitorPrintWindowClose(w) {
+    if (printCheckTimer) clearInterval(printCheckTimer);
+    printWindowRef = w;
+    printCheckTimer = setInterval(function() {
+      if (!printWindowRef || printWindowRef.closed) {
+        clearInterval(printCheckTimer);
+        printWindowRef = null;
+        window.resetPOSForNewTransaction();
+      }
+    }, 500);
   }
 
   // =========================

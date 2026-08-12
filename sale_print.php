@@ -81,6 +81,19 @@ $storePhone = $setting['store_phone']   ?? '';
 $footer     = $setting['footer_note']   ?? '';
 $logoUrl    = $setting['logo_url']      ?? '';
 
+// --- logo inline data URI (prevent canvas export security error) ---
+$logoDataUri = '';
+if (!empty($logoUrl)) {
+    $cleanLogoPath = ltrim(str_replace('/tokoapp/', '', $logoUrl), '/');
+    $logoPath = __DIR__ . '/' . $cleanLogoPath;
+    if (file_exists($logoPath)) {
+        $mime = mime_content_type($logoPath) ?: 'image/png';
+        $logoDataUri = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoPath));
+    }
+}
+
+$exportInvoiceName = preg_replace('/[^a-zA-Z0-9_-]/', '_', $sale['invoice_no'] ?? ('S'.$sale['id']));
+
 // --- poin ---
 $global_ppr = (int)($setting['points_per_rupiah'] ?? 0);
 $ppr_umum   = (int)($setting['points_per_rupiah_umum'] ?? 0);
@@ -312,6 +325,31 @@ $cssLineHeight   = number_format($paperLineHeight, 2, '.', '');
 
 <body>
 
+<script>
+function notifyOpenerReset() {
+  try {
+    if (window.opener && !window.opener.closed) {
+      if (typeof window.opener.resetPOSForNewTransaction === 'function') {
+        window.opener.resetPOSForNewTransaction();
+      }
+      window.opener.postMessage('reset_pos_transaction', '*');
+    }
+  } catch(e) {}
+}
+
+window.addEventListener('beforeunload', notifyOpenerReset);
+
+function returnToPOS() {
+  notifyOpenerReset();
+  if (window.opener && !window.opener.closed) {
+    try { window.opener.focus(); } catch(e){}
+    try { window.close(); } catch(e){}
+  } else {
+    window.location.href = '/tokoapp/pos_display.php?reset=1';
+  }
+}
+</script>
+
 <div class="no-print-toolbar">
   <div class="toolbar-title">
     📄 Preview Nota Penjualan
@@ -321,24 +359,24 @@ $cssLineHeight   = number_format($paperLineHeight, 2, '.', '');
     <button type="button" class="btn-action btn-print" onclick="window.print()">
       🖨️ Cetak Nota
     </button>
-    <button type="button" class="btn-action btn-jpg" onclick="NotaExporter.downloadJPG(document.getElementById('strukContent'), 'Nota_<?= htmlspecialchars($sale['invoice_no'] ?? $sale['id']) ?>.jpg')">
+    <button type="button" class="btn-action btn-jpg" onclick="NotaExporter.downloadJPG(document.getElementById('strukContent'), 'Nota_<?= htmlspecialchars($exportInvoiceName) ?>.jpg')">
       🖼️ Simpan JPG
     </button>
-    <button type="button" class="btn-action btn-pdf" onclick="NotaExporter.downloadPDF(document.getElementById('strukContent'), 'Nota_<?= htmlspecialchars($sale['invoice_no'] ?? $sale['id']) ?>.pdf')">
+    <button type="button" class="btn-action btn-pdf" onclick="NotaExporter.downloadPDF(document.getElementById('strukContent'), 'Nota_<?= htmlspecialchars($exportInvoiceName) ?>.pdf')">
       📄 Simpan PDF
     </button>
-    <a href="/tokoapp/pos_display.php" class="btn-action btn-back">
+    <button type="button" class="btn-action btn-back" onclick="returnToPOS()">
       ⬅️ POS Kasir
-    </a>
+    </button>
   </div>
 </div>
 
 <div class="struk-wrapper">
 <div class="struk" id="strukContent">
 
-  <?php if ($printShowLogo && $logoUrl && $logoAlign !== 'none'): ?>
+  <?php if ($printShowLogo && ($logoDataUri || $logoUrl) && $logoAlign !== 'none'): ?>
     <div style="text-align:<?= htmlspecialchars($logoAlign) ?>;margin-bottom:2px;">
-      <img src="<?= htmlspecialchars($logoUrl) ?>" alt="Logo" style="max-height:60px;">
+      <img src="<?= $logoDataUri ?: htmlspecialchars($logoUrl) ?>" alt="Logo" style="max-height:60px;">
     </div>
   <?php endif; ?>
 
@@ -460,7 +498,7 @@ $cssLineHeight   = number_format($paperLineHeight, 2, '.', '');
 
   <hr>
   <div class="no-print" style="text-align:center;margin-top:6px;">
-    <a href="/tokoapp/pos_display.php">Transaksi lagi</a>
+    <a href="javascript:void(0)" onclick="returnToPOS()">Transaksi lagi</a>
   </div>
 
 </div>
