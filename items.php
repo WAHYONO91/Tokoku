@@ -95,10 +95,19 @@ if (!$isPicker && $_SERVER['REQUEST_METHOD'] === 'POST') {
       $gambar = $stG->fetchColumn() ?: '';
   }
 
-  // Handle upload
-  if (isset($_FILES['gambar']) && $_FILES['gambar']['error'] === UPLOAD_ERR_OK) {
-      $tmp = $_FILES['gambar']['tmp_name'];
-      $ext = strtolower(pathinfo($_FILES['gambar']['name'], PATHINFO_EXTENSION));
+  // Handle upload (from camera or gallery)
+  $uploadedFile = null;
+  if (isset($_FILES['gambar_camera']) && $_FILES['gambar_camera']['error'] === UPLOAD_ERR_OK) {
+      $uploadedFile = $_FILES['gambar_camera'];
+  } elseif (isset($_FILES['gambar_file']) && $_FILES['gambar_file']['error'] === UPLOAD_ERR_OK) {
+      $uploadedFile = $_FILES['gambar_file'];
+  } elseif (isset($_FILES['gambar']) && $_FILES['gambar']['error'] === UPLOAD_ERR_OK) {
+      $uploadedFile = $_FILES['gambar'];
+  }
+
+  if ($uploadedFile) {
+      $tmp = $uploadedFile['tmp_name'];
+      $ext = strtolower(pathinfo($uploadedFile['name'], PATHINFO_EXTENSION));
       $filename = preg_replace('/[^a-zA-Z0-9_-]/', '_', $kode ?: $original_kode) . '_' . time() . '.' . $ext;
       $dest = __DIR__ . '/uploads/items/' . $filename;
       if (!is_dir(__DIR__ . '/uploads/items/')) {
@@ -332,7 +341,7 @@ function val($row, $key, $default=''){
 .table-actions{white-space:nowrap;display:flex;gap:.35rem}
 @media (max-width:640px){ .grid-2{grid-template-columns:1fr} }
 
-/* CSS untuk Tombol Cetak */
+/* CSS untuk Tombol Cetak & Responsive Views */
 .btn-print-barcode {
   background-color: #4CAF50;
   color: white;
@@ -357,6 +366,49 @@ table td .btn-print-barcode {
   width: auto;
   font-size: 12px;
   padding: 6px 12px;
+}
+
+/* Responsive Desktop vs Mobile Views */
+.mobile-card-list {
+  display: none;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+
+.mobile-item-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-bd);
+  border-radius: 14px;
+  padding: 1rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+}
+
+.btn-mobile-act {
+  flex: 1;
+  padding: 0.5rem !important;
+  font-size: 0.8rem !important;
+  font-weight: 700 !important;
+  text-align: center;
+  border-radius: 8px !important;
+  text-decoration: none !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  border: none;
+  cursor: pointer;
+}
+.btn-mobile-act.edit { background: #0284c7; color: #fff !important; }
+.btn-mobile-act.del { background: rgba(239,68,68,0.15); color: #ef4444 !important; border: 1px solid rgba(239,68,68,0.3); }
+.btn-mobile-act.print { background: #10b981; color: #fff !important; }
+
+@media (max-width: 768px) {
+  .desktop-table-view { display: none !important; }
+  .mobile-card-list { display: flex !important; }
+  .form-card { padding: 1rem; border-radius: 14px; }
+  .grid-2 { grid-template-columns: 1fr; gap: 0.75rem; }
+  .form-card input, .form-card select { font-size: 16px !important; padding: 0.65rem !important; }
 }
 
 /* ==== Picker UX ==== */
@@ -454,13 +506,23 @@ table td .btn-print-barcode {
           ?>
         </datalist>
       </label>
-      <label>Gambar Baru
-        <input type="file" name="gambar" accept="image/*" style="padding:0.4rem;">
-        <?php if(!empty($editRow['gambar']) && file_exists(__DIR__.'/uploads/items/'.$editRow['gambar'])): ?>
-          <small class="muted">Ada gambar: <?= htmlspecialchars($editRow['gambar']) ?></small>
-        <?php else: ?>
-          <small class="muted">Belum ada gambar (opsional)</small>
-        <?php endif; ?>
+      <label style="grid-column: 1 / -1;">Foto / Gambar Barang
+        <div style="display:flex; gap:0.6rem; flex-wrap:wrap; align-items:center; margin-top:0.4rem;">
+          <label class="btn-camera" style="margin:0; cursor:pointer; background:linear-gradient(135deg, #0ea5e9, #0284c7); color:#fff; padding:0.6rem 1rem; border-radius:10px; font-size:0.88rem; font-weight:700; display:inline-flex; align-items:center; gap:0.4rem; box-shadow:0 4px 12px rgba(2,132,199,0.3); transition:all 0.2s;">
+            📸 Ambil Foto (Kamera HP)
+            <input type="file" name="gambar_camera" accept="image/*" capture="environment" style="display:none;" onchange="handleItemImagePreview(this)">
+          </label>
+
+          <label class="btn-gallery" style="margin:0; cursor:pointer; background:var(--input-bg); border:1px solid var(--card-bd); color:var(--text-main); padding:0.6rem 1rem; border-radius:10px; font-size:0.88rem; font-weight:600; display:inline-flex; align-items:center; gap:0.4rem; transition:all 0.2s;">
+            📁 Pilih dari Galeri / PC
+            <input type="file" name="gambar_file" accept="image/*" style="display:none;" onchange="handleItemImagePreview(this)">
+          </label>
+        </div>
+
+        <div id="itemImagePreviewBox" style="margin-top:0.75rem; display:<?= !empty($editRow['gambar']) && file_exists(__DIR__.'/uploads/items/'.$editRow['gambar']) ? 'block' : 'none' ?>;">
+          <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:0.25rem;">Preview Foto Barang:</div>
+          <img id="itemImagePreviewImg" src="<?= !empty($editRow['gambar']) && file_exists(__DIR__.'/uploads/items/'.$editRow['gambar']) ? 'uploads/items/'.htmlspecialchars($editRow['gambar']) : '' ?>" style="max-height:120px; max-width:160px; border-radius:10px; border:2px solid var(--card-bd); object-fit:cover;">
+        </div>
       </label>
       <label>Supplier
         <select name="supplier_kode">
@@ -530,93 +592,142 @@ table td .btn-print-barcode {
   </form>
   <?php endif; ?>
 
-  <!-- ===== TABEL LIST ===== -->
-  <table class="table-small" id="itemsTable">
-    <thead>
-      <tr>
-        <th>Kode</th>
-        <th>Nama</th>
-        <th>Kategori</th>
-        <th>Gambar</th>
-        <th>Supplier</th>
-        <th>Unit</th>
-        <th>Tgl Masuk</th>
-        <th class="right">HB</th>
-        <th class="right">H1</th>
-        <th class="right">H2</th>
-        <th class="right">H3</th>
-        <th class="right">H4</th>
-        <th class="right">Stok Toko</th>
-        <th class="right">Stok Gudang</th>
-        <?php if (!$isPicker): ?>
-          <th class="no-print">Aksi</th>
+  <!-- ===== DESKTOP TABEL LIST ===== -->
+  <div class="desktop-table-view" style="overflow-x:auto;">
+    <table class="table-small" id="itemsTable">
+      <thead>
+        <tr>
+          <th>Kode</th>
+          <th>Nama</th>
+          <th>Kategori</th>
+          <th>Gambar</th>
+          <th>Supplier</th>
+          <th>Unit</th>
+          <th>Tgl Masuk</th>
+          <th class="right">HB</th>
+          <th class="right">H1</th>
+          <th class="right">H2</th>
+          <th class="right">H3</th>
+          <th class="right">H4</th>
+          <th class="right">Stok Toko</th>
+          <th class="right">Stok Gudang</th>
+          <?php if (!$isPicker): ?>
+            <th class="no-print">Aksi</th>
+          <?php endif; ?>
+        </tr>
+      </thead>
+      <tbody>
+        <?php if (!$rows): ?>
+          <tr><td colspan="<?= $isPicker ? '12' : '13' ?>">Belum ada data barang.</td></tr>
+        <?php else: ?>
+          <?php foreach($rows as $r): ?>
+            <?php
+              $sk = $r['supplier_kode'] ?? '';
+              $supplierLabel = $sk !== '' ? ($supplierMap[$sk] ?? $sk) : '';
+
+              $tglMasuk = $r['tgl_masuk'] ?? ($r['created_at'] ?? null);
+              $tglMasukFmt = $tglMasuk ? date('d-m-Y', strtotime($tglMasuk)) : '-';
+
+              $kodeRow = (string)($r['kode'] ?? '');
+              $barcodeRow = (string)($r['barcode'] ?? '');
+            ?>
+            <tr
+              data-kode="<?= htmlspecialchars($kodeRow) ?>"
+              data-barcode="<?= htmlspecialchars($barcodeRow) ?>"
+              title="<?= $isPicker ? 'Double click untuk pilih' : '' ?>"
+            >
+              <td><?= htmlspecialchars($kodeRow) ?></td>
+              <td><?= htmlspecialchars($r['nama']) ?></td>
+              <td><?= htmlspecialchars($r['kategori'] ?? '-') ?></td>
+              <td>
+                <?php if(!empty($r['gambar']) && file_exists(__DIR__.'/uploads/items/'.$r['gambar'])): ?>
+                  <img src="uploads/items/<?=htmlspecialchars($r['gambar'])?>" style="height:40px; border-radius:4px; border:1px solid var(--card-bd);">
+                <?php else: ?>
+                  -
+                <?php endif; ?>
+              </td>
+              <td><?= htmlspecialchars($supplierLabel) ?></td>
+              <td><?= htmlspecialchars($r['unit_code']) ?></td>
+              <td><?= htmlspecialchars($tglMasukFmt) ?></td>
+              <td class="right"><?= number_format((int)$r['harga_beli'], 0, ',', '.') ?></td>
+              <td class="right"><?= number_format((int)$r['harga_jual1'], 0, ',', '.') ?></td>
+              <td class="right"><?= number_format((int)$r['harga_jual2'], 0, ',', '.') ?></td>
+              <td class="right"><?= number_format((int)$r['harga_jual3'], 0, ',', '.') ?></td>
+              <td class="right"><?= number_format((int)$r['harga_jual4'], 0, ',', '.') ?></td>
+              <td class="right"><?= (int)($r['stok_toko'] ?? 0) ?></td>
+              <td class="right"><?= (int)($r['stok_gudang'] ?? 0) ?></td>
+
+              <?php if (!$isPicker): ?>
+              <td class="no-print table-actions">
+                <a href="items.php?edit=<?= urlencode($kodeRow) ?>">Edit</a>
+                <?php if ($canCRUD): ?>
+                  <a href="items.php?delete=<?= urlencode($kodeRow) ?>"
+                     onclick="return confirm('Hapus barang ini? Tindakan tidak dapat dibatalkan.');"
+                     style="color:#dc2626">Hapus</a>
+                <?php else: ?>
+                  <span style="opacity:.6;cursor:not-allowed">Hapus</span>
+                <?php endif; ?>
+
+                <button type="button"
+                        class="btn-print-barcode"
+                        onclick="printBarcode('<?= htmlspecialchars($kodeRow) ?>','<?= htmlspecialchars($barcodeRow) ?>')">
+                  Cetak
+                </button>
+              </td>
+              <?php endif; ?>
+            </tr>
+          <?php endforeach; ?>
         <?php endif; ?>
-      </tr>
-    </thead>
-    <tbody>
-      <?php if (!$rows): ?>
-        <tr><td colspan="<?= $isPicker ? '12' : '13' ?>">Belum ada data barang.</td></tr>
-      <?php else: ?>
-        <?php foreach($rows as $r): ?>
-          <?php
-            $sk = $r['supplier_kode'] ?? '';
-            $supplierLabel = $sk !== '' ? ($supplierMap[$sk] ?? $sk) : '';
+      </tbody>
+    </table>
+  </div>
 
-            $tglMasuk = $r['tgl_masuk'] ?? ($r['created_at'] ?? null);
-            $tglMasukFmt = $tglMasuk ? date('d-m-Y', strtotime($tglMasuk)) : '-';
-
-            $kodeRow = (string)($r['kode'] ?? '');
-            $barcodeRow = (string)($r['barcode'] ?? '');
-          ?>
-          <tr
-            data-kode="<?= htmlspecialchars($kodeRow) ?>"
-            data-barcode="<?= htmlspecialchars($barcodeRow) ?>"
-            title="<?= $isPicker ? 'Double click untuk pilih' : '' ?>"
-          >
-            <td><?= htmlspecialchars($kodeRow) ?></td>
-            <td><?= htmlspecialchars($r['nama']) ?></td>
-            <td><?= htmlspecialchars($r['kategori'] ?? '-') ?></td>
-            <td>
+  <!-- ===== MOBILE CARD LIST (TAMPILAN KHUSUS HP) ===== -->
+  <div class="mobile-card-list no-print">
+    <?php if (!$rows): ?>
+      <div style="padding:1.5rem; text-align:center; color:var(--text-muted);">Belum ada data barang.</div>
+    <?php else: ?>
+      <?php foreach($rows as $r): 
+        $kodeRow = (string)($r['kode'] ?? '');
+        $barcodeRow = (string)($r['barcode'] ?? '');
+        $stokToko = (int)($r['stok_toko'] ?? 0);
+        $stokGudang = (int)($r['stok_gudang'] ?? 0);
+      ?>
+        <div class="mobile-item-card">
+          <div style="display:flex; gap:0.75rem; align-items:center;">
+            <div style="flex-shrink:0;">
               <?php if(!empty($r['gambar']) && file_exists(__DIR__.'/uploads/items/'.$r['gambar'])): ?>
-                <img src="uploads/items/<?=htmlspecialchars($r['gambar'])?>" style="height:40px; border-radius:4px; border:1px solid var(--card-bd);">
+                <img src="uploads/items/<?= htmlspecialchars($r['gambar']) ?>" alt="Foto" style="width:60px; height:60px; object-fit:cover; border-radius:10px; border:1px solid var(--card-bd);">
               <?php else: ?>
-                -
+                <div style="width:60px; height:60px; background:var(--input-bg); border-radius:10px; border:1px solid var(--card-bd); display:flex; align-items:center; justify-content:center; font-size:1.5rem;">📦</div>
               <?php endif; ?>
-            </td>
-            <td><?= htmlspecialchars($supplierLabel) ?></td>
-            <td><?= htmlspecialchars($r['unit_code']) ?></td>
-            <td><?= htmlspecialchars($tglMasukFmt) ?></td>
-            <td class="right"><?= number_format((int)$r['harga_beli'], 0, ',', '.') ?></td>
-            <td class="right"><?= number_format((int)$r['harga_jual1'], 0, ',', '.') ?></td>
-            <td class="right"><?= number_format((int)$r['harga_jual2'], 0, ',', '.') ?></td>
-            <td class="right"><?= number_format((int)$r['harga_jual3'], 0, ',', '.') ?></td>
-            <td class="right"><?= number_format((int)$r['harga_jual4'], 0, ',', '.') ?></td>
-            <td class="right"><?= (int)($r['stok_toko'] ?? 0) ?></td>
-            <td class="right"><?= (int)($r['stok_gudang'] ?? 0) ?></td>
-
-            <?php if (!$isPicker): ?>
-            <td class="no-print table-actions">
-              <a href="items.php?edit=<?= urlencode($kodeRow) ?>">Edit</a>
-              <?php if ($canCRUD): ?>
-                <a href="items.php?delete=<?= urlencode($kodeRow) ?>"
-                   onclick="return confirm('Hapus barang ini? Tindakan tidak dapat dibatalkan.');"
-                   style="color:#dc2626">Hapus</a>
-              <?php else: ?>
-                <span style="opacity:.6;cursor:not-allowed">Hapus</span>
-              <?php endif; ?>
-
-              <button type="button"
-                      class="btn-print-barcode"
-                      onclick="printBarcode('<?= htmlspecialchars($kodeRow) ?>','<?= htmlspecialchars($barcodeRow) ?>')">
-                Cetak
-              </button>
-            </td>
+            </div>
+            <div style="flex:1;">
+              <div style="font-weight:700; font-size:0.95rem; color:var(--text-main); line-height:1.3;"><?= htmlspecialchars($r['nama']) ?></div>
+              <div style="font-size:0.78rem; color:var(--text-muted); margin-top:0.2rem;">
+                Kode: <code style="font-weight:700; color:var(--text-main);"><?= htmlspecialchars($kodeRow) ?></code>
+                <?php if($barcodeRow): ?> | BC: <?= htmlspecialchars($barcodeRow) ?><?php endif; ?>
+              </div>
+              <div style="display:flex; gap:0.75rem; font-size:0.82rem; margin-top:0.35rem; align-items:center; flex-wrap:wrap;">
+                <span style="color:#f97316; font-weight:800; font-size:0.92rem;">Rp <?= number_format((int)$r['harga_jual1'], 0, ',', '.') ?></span>
+                <span style="color:var(--text-muted); font-size:0.78rem;">| Stok: <strong style="color:var(--text-main);"><?= $stokToko ?> Toko</strong> / <?= $stokGudang ?> Gd</span>
+              </div>
+            </div>
+          </div>
+          
+          <?php if (!$isPicker): ?>
+          <div style="display:flex; gap:0.4rem; margin-top:0.75rem; padding-top:0.6rem; border-top:1px dashed var(--card-bd);">
+            <a href="items.php?edit=<?= urlencode($kodeRow) ?>" class="btn-mobile-act edit">✏️ Edit</a>
+            <?php if ($canCRUD): ?>
+              <a href="items.php?delete=<?= urlencode($kodeRow) ?>" onclick="return confirm('Hapus barang ini?');" class="btn-mobile-act del">🗑️ Hapus</a>
             <?php endif; ?>
-          </tr>
-        <?php endforeach; ?>
-      <?php endif; ?>
-    </tbody>
-  </table>
+            <button type="button" class="btn-mobile-act print" onclick="printBarcode('<?= htmlspecialchars($kodeRow) ?>','<?= htmlspecialchars($barcodeRow) ?>')">🖨️ Barcode</button>
+          </div>
+          <?php endif; ?>
+        </div>
+      <?php endforeach; ?>
+    <?php endif; ?>
+  </div>
 </article>
 
 <?php if (!$isPicker): ?>
@@ -818,15 +929,28 @@ function printBarcode(kode, barcode) {
     }
   });
 
-  // auto pilih baris pertama (jika ada) supaya Enter langsung bekerja
-  const first = tbody.querySelector('tr[data-kode]');
-  if(first) setActiveRow(first);
-
   // fokus ke input filter jika ada
   const q = document.querySelector('input[name="q"]');
   if(q){ q.focus(); q.select && q.select(); }
 })();
 </script>
 <?php endif; ?>
+
+<script>
+function handleItemImagePreview(input) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const box = document.getElementById('itemImagePreviewBox');
+      const img = document.getElementById('itemImagePreviewImg');
+      if (box && img) {
+        img.src = e.target.result;
+        box.style.display = 'block';
+      }
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+</script>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
