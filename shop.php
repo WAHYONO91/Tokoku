@@ -176,11 +176,23 @@ $items = $stmt->fetchAll();
 // Get Categories for filter
 $cats = $pdo->query("SELECT DISTINCT kategori FROM items WHERE kategori IS NOT NULL AND kategori != '' ORDER BY kategori")->fetchAll(PDO::FETCH_COLUMN);
 
-// Calculate Cart count
-$cart_count = 0;
-if (isset($_SESSION['cart'])) {
-    foreach ($_SESSION['cart'] as $kode => $qty) {
-        $cart_count += $qty;
+// Helper to sanitize banner links safely
+if (!function_exists('format_safe_banner_link')) {
+    function format_safe_banner_link(?string $link): string {
+        $link = trim((string)$link);
+        if ($link === '') return '#katalog';
+        if (
+            strpos($link, 'http://') === 0 || 
+            strpos($link, 'https://') === 0 || 
+            strpos($link, '#') === 0 || 
+            strpos($link, '/') === 0 || 
+            strpos($link, 'shop.php') === 0 || 
+            strpos($link, 'cart.php') === 0
+        ) {
+            return $link;
+        }
+        // If keyword/text like "Barang mantap", route to shop product search
+        return 'shop.php?q=' . urlencode($link);
     }
 }
 
@@ -834,9 +846,7 @@ body {
                         <div class="hero-banner-content">
                             <h1 class="hero-banner-title"><?= htmlspecialchars($ad['title'] ?: 'Dapatkan Promo Spesial!') ?></h1>
                             <p class="hero-banner-desc"><?= htmlspecialchars($ad['description'] ?: 'Temukan ribuan penawaran menarik khusus untuk Anda hari ini.') ?></p>
-                            <?php if (!empty($ad['link'])): ?>
-                                <a href="<?= htmlspecialchars($ad['link']) ?>" class="hero-banner-btn">Belanja Sekarang 🛍️</a>
-                            <?php endif; ?>
+                            <a href="<?= htmlspecialchars(format_safe_banner_link($ad['link'] ?? '')) ?>" class="hero-banner-btn">Belanja Sekarang 🛍️</a>
                         </div>
                     </div>
                 <?php endforeach; ?>
@@ -862,9 +872,7 @@ body {
             <div class="hero-banner-content">
                 <h1 class="hero-banner-title"><?= htmlspecialchars($ad['title'] ?: 'Dapatkan Promo Spesial!') ?></h1>
                 <p class="hero-banner-desc"><?= htmlspecialchars($ad['description'] ?: 'Temukan ribuan penawaran menarik khusus untuk Anda hari ini.') ?></p>
-                <?php if (!empty($ad['link'])): ?>
-                    <a href="<?= htmlspecialchars($ad['link']) ?>" class="hero-banner-btn">Belanja Sekarang 🛍️</a>
-                <?php endif; ?>
+                <a href="<?= htmlspecialchars(format_safe_banner_link($ad['link'] ?? '')) ?>" class="hero-banner-btn">Belanja Sekarang 🛍️</a>
             </div>
         </section>
     <?php else: ?>
